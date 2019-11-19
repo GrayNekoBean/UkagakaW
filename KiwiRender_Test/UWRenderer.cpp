@@ -588,7 +588,7 @@ HRESULT UkagakaRenderer::PlayAnimationImmediately(string id, AnimationState stat
 	return PlayAnimation(id, state);
 }
 
-HRESULT UkagakaRenderer::LogicRenderUpdate() {
+HRESULT UkagakaRenderer::MainLogicUpdate() {
 	
 	if (bitmapQueue.empty()) {
 

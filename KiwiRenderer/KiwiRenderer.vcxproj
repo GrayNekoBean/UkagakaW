@@ -23,6 +23,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Ukagaka.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="UWAPI.h" />
     <ClInclude Include="UWEvents.h" />
     <ClInclude Include="UWRenderer.h" />
     <ClInclude Include="UWMain.h" />
@@ -32,6 +33,7 @@
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="Ukagaka.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="UWAPI.cpp" />
     <ClCompile Include="UWEvents.cpp" />
     <ClCompile Include="UWMain.cpp" />
     <ClCompile Include="UWRenderer.cpp" />
@@ -49,16 +51,17 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <CLRSupport>false</CLRSupport>
+    <CLRSupport>true</CLRSupport>
     <UseOfMfc>false</UseOfMfc>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <CLRSupport>false</CLRSupport>
+    <CLRSupport>true</CLRSupport>
     <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">

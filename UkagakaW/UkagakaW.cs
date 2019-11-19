@@ -20,6 +20,16 @@ namespace UkagakaW
         [DllImport("KiwiRenderer.dll", EntryPoint = "InitializeLogicThread", CallingConvention = CallingConvention.Cdecl)]
         public static extern void InitializeLogicThread();
 
+        [DllImport("KiwiRenderer.dll", EntryPoint = "PassUkagakaInteractEvent", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PassUkagakaInteractEvent(IntPtr _event);
+
+        public delegate void UkagakaInteractEvent(string ukagakaID, int par0);
+
+        public delegate void InitFunc();
+
+        static UkagakaInteractEvent interactEvent = UkagakaInteract;
+        static IntPtr interactFuncPtr;
+
         public static void Main(string[] args)
         {
             Console.WriteLine("wtf");
@@ -33,6 +43,10 @@ namespace UkagakaW
             }
             else
             {
+
+                interactFuncPtr = Marshal.GetFunctionPointerForDelegate<UkagakaInteractEvent>(interactEvent);
+                PassUkagakaInteractEvent(interactFuncPtr);
+
                 LogicThread = new Thread(InitializeLogicThread);
                 LogicThread.Start();
 
@@ -42,7 +56,13 @@ namespace UkagakaW
 
             //System.Console.WriteLine("loaded");
             LogicThread.Abort();
+            Native.FreeLibrary(hDLL);
             System.Console.ReadLine();
+        }
+
+        public static void UkagakaInteract(string ukagakaID, int parameter)
+        {
+            Console.WriteLine(ukagakaID + " Interacted!");
         }
     }
 }

@@ -25,6 +25,7 @@
 #pragma once
 
 #include "stdafx.h"
+
 #include "UWMain.h"
 //
 //int WINAPI wWinMain(
@@ -32,6 +33,7 @@
 //	HINSTANCE hPrevInstance,
 //	LPWSTR cmdLine,
 //	int lineNum) {
+
 BOOL APIENTRY DllMain(HMODULE hInstance,
 	DWORD  ul_reason_for_call,
 	LPVOID lpReserved
@@ -61,16 +63,17 @@ BOOL APIENTRY DllMain(HMODULE hInstance,
 }
 
 void InitializeMainRenderThread() {
-
+	
 	StartCSharpDLLProgress();
 
 	RegisterMouseEvent(OnWndLeftDown, MSE_LEFT_DOWN);
-	RegisterMouseEvent(OnWndLeftHold, MSE_LEFT_HOLD);
+	RegisterMouseEvent(OnWndLeftDrag, MSE_LEFT_DRAG_IN_GLOBAL);
 	RegisterMouseEvent(OnWndRightDown, MSE_RIGHT_DOWN);
+	RegisterMouseEvent(OnWndLeftClick, MSE_LEFT_CLICK);
 
 	if (UkagakaInstances_ID["TEST"]->renderer != NULL) {
 		UkagakaInstances_ID["TEST"]->renderer->PlayAnimation("Anim1", AnimationState::InfinityLoop);
-		UkagakaInstances_ID["TEST"]->renderer->LogicRenderUpdate();
+		UkagakaInstances_ID["TEST"]->renderer->MainLogicUpdate();
 	}
 
 	LOAD_FINISH = TRUE;
@@ -125,18 +128,24 @@ void InitializeLogicThread() {
 				deltaTime += dt;
 			}
 
-			WCHAR chInput[256];
-			wsprintf(chInput, L"delta Time: %d \n", deltaTime);
-			Log(wstring(chInput));
+			//WCHAR chInput[256];
+			//wsprintf(chInput, L"delta Time: %d \n", deltaTime);
+			//Log(wstring(chInput));
 
 			int sleeptime = 40 - deltaTime;
 			if (sleeptime > 2) {
 				Sleep(sleeptime);
+				if (LeftHolding) {
+					LeftHoldingTime += 40 ;
+				}
 			}
 			else if (sleeptime < 0) {
 				WCHAR chInput[256];
 				wsprintf(chInput, L"WTF delta time too long! delta Time: %d \n", deltaTime);
 				Warning(wstring(chInput));
+				if (LeftHolding) {
+					LeftHoldingTime += deltaTime;
+				}
 			}
 			//_CrtDumpMemoryLeaks();
 			//locker.unlock();
@@ -158,10 +167,24 @@ void OnWndLeftDown(POINT pos, HWND hWnd) {
 	}
 }
 
-void OnWndLeftHold(POINT pos, HWND hWnd) {
+void OnWndLeftDrag(POINT pos, HWND hWnd) {
 	SPUkagaka ukw = UkagakaInstances_HWND[hWnd];
 	if (ukw != NULL) {
 		ukw->renderer->pDirect2DRenderer->OnLeftDrag_Global(pos);
+	}
+}
+
+void OnWndRightDown(POINT pos, HWND hWnd) {
+	int iii = 0;
+	UkagakaInstances_HWND[hWnd]->renderer->PlayAnimationImmediately("inm", AnimationState::InfinityLoop);
+}
+
+void OnWndLeftClick(POINT pos, HWND hWnd) {
+	if (MT_OnUkagakaInteract == NULL) {
+		Log(L"?????????");
+	}else{
+		Log(L"???");
+		MT_OnUkagakaInteract(UkagakaInstances_HWND[hWnd]->id.c_str(), 0);
 	}
 }
 
@@ -329,7 +352,7 @@ ATOM RegisterWNDClass(LPCWSTR id) {
 	WNDCLASSEXW wcex;
 
 	wcex.cbSize = sizeof(WNDCLASSEXW);
-	wcex.style = CS_HREDRAW | CS_VREDRAW;
+	wcex.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 	wcex.lpfnWndProc = WndProc;
 	wcex.cbClsExtra = 0;
 	wcex.cbWndExtra = 0;
@@ -348,7 +371,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	
 	if (LeftHolding) {
 		//Log(L"holding");
-		OnLeftHold(GetMouseGlobalPos(), hWnd);
+		if (LeftHoldingTime >= MaxClickInterval) {
+			POINT globalPos = GetMouseGlobalPos();
+			OnLeftHold(globalPos, hWnd);
+			if (IsMouseMoved) {
+				OnLeftDragInGlobal(globalPos, hWnd);
+			}
+		}
 	}
 
 	switch (msg)
@@ -377,6 +406,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		int x = LOWORD(lParam);
 		int y = HIWORD(lParam);
 		if (LeftHolding) {
+			IsMouseMoved = true;
 			OnLeftDragInWindow({ x, y }, hWnd);
 		}
 		break;
@@ -385,14 +415,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	{
 		int x = LOWORD(lParam);
 		int y = HIWORD(lParam);
-		OnLeftClick({ x, y }, hWnd);
+		OnLeftDoubleClick({ x, y }, hWnd);
 		break;
 	}
 	case WM_RBUTTONDBLCLK:
 	{
 		int x = LOWORD(lParam);
 		int y = HIWORD(lParam);
-		OnRightClick({ x, y }, hWnd);
+		OnRightDoubleClick({ x, y }, hWnd);
 		break;
 	}
 	case WM_LBUTTONDOWN:
@@ -400,7 +430,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		int x = LOWORD(lParam);
 		int y = HIWORD(lParam);
 		OnLeftDown({ x, y }, hWnd);
+		LeftHoldingTime = 0;
 		LeftHolding = true;
+		IsMouseMoved = false;
 		break;
 	}
 	case WM_LBUTTONUP:
@@ -408,7 +440,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		int x = LOWORD(lParam);
 		int y = HIWORD(lParam);
 		OnLeftUp({ x , y }, hWnd);
+		if (LeftHolding) {
+			if (LeftHoldingTime < MaxClickInterval) {
+				OnLeftClick({ x, y }, hWnd);
+			}
+		}
 		LeftHolding = false;
+		IsMouseMoved = false;
+		LeftHoldingTime = 0;
 		break;
 	}
 	case WM_RBUTTONDOWN:
@@ -438,15 +477,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 void InnerUpdate()
 {
 	for (auto uki : UkagakaInstances_HWND) {
-		uki.second->renderer->LogicRenderUpdate();
+		uki.second->renderer->MainLogicUpdate();
 	}
 }
 
 void InnerFixedUpdate()
 {
-}
-
-void OnWndRightDown(POINT pos, HWND hWnd) {
-	int iii = 0;
-	UkagakaInstances_HWND[hWnd]->renderer->PlayAnimationImmediately("inm", AnimationState::InfinityLoop);
 }

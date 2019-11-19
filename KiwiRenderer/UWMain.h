@@ -25,11 +25,11 @@
 
 #include "stdafx.h"
 
+#include "UWAPI.h"
+#include "UWEvents.h"
+
 //#include <thread>
 //#include <mutex>
-
-#include "Ukagaka.h"
-#include "UWEvents.h"
 
 HINSTANCE AppInstance;
 
@@ -40,6 +40,16 @@ BOOL LOAD_FINISH = FALSE;
 UINT DeltaTime;
 UINT FixedDeltaTime;
 
+//RT: Render Thread(fixed frame)
+//MT: Main Logic Thread(dynamic loop)
+
+RenderEvent MT_OnGeneralRender = NULL;
+RenderEvent MT_OnAnimFinishPlay = NULL;
+
+InteractEvent MT_OnUkagakaTouch = NULL;
+InteractEvent MT_OnUkagakaInteract = NULL;
+InteractEvent MT_OnElementClick = NULL;
+
 //thread LogicThread;
 //mutex threadLock;
 
@@ -47,6 +57,7 @@ map<string, UPUkagaka> LoadingUkagaka = map<string, UPUkagaka>();
 
 ULONG_PTR token;
 
+typedef void (*InitFunc)();
 
 //int WINAPI wWinMain(
 //	HINSTANCE hInstance,
@@ -65,15 +76,17 @@ void CSHARP_SIMULATE_Main();
 
 void CSHARP_SIMULATE_LoadUkagakaFilesAndResources();
 
-void OnWndLeftDown(POINT pos, HWND hWnd);
-
-void OnWndLeftHold(POINT pos, HWND hWnd);
-
-void OnWndRightDown(POINT pos, HWND hWnd);
-
 extern "C" __declspec(dllexport) void InitializeMainRenderThread();
 
 extern "C" __declspec(dllexport) void InitializeLogicThread();
+
+void OnWndLeftDown(POINT pos, HWND hWnd);
+
+void OnWndLeftDrag(POINT pos, HWND hWnd);
+
+void OnWndRightDown(POINT pos, HWND hWnd);
+
+void OnWndLeftClick(POINT pos, HWND hWnd);
 
 void SetUkagakaLoading(LPCSTR ID, LPCWSTR Name);
 

@@ -97,6 +97,20 @@ typedef UWRenderTask *PRenderTask, *LPRenderTask;
 typedef unique_ptr<UWRenderTask> UPRenderTask;
 typedef shared_ptr<UWRenderTask> SPRenderTask;
 
+typedef void (*RenderEvent)(LPCSTR); // Par1: Ukagaka ID
+
+typedef void (*InteractEvent)(LPCSTR, int); // Par1: Ukagaka ID, Par2: Element/Ukagaka body part ID
+
+enum UkagakaBodyPart {
+	Head = 0,
+	Face = 1,
+	Opai = 2,
+	Arm = 3,
+	Hand = 4,
+	Stomach = 5,
+	Leg = 6,
+	Feet = 7
+};
 
 enum FrameRate {
 	_20MS = 20, //50FPS
@@ -274,8 +288,8 @@ typedef unique_ptr<UWRenderBuffer> UPRenderBuffer;
 typedef shared_ptr<UWRenderBuffer> SPRenderBuffer;
 
 enum AnimationState {
-	InfinityLoop,
-	EndWithLastFrame
+	InfinityLoop = 0,
+	EndWithLastFrame = 1
 };
 
 class UkagakaRenderer {
@@ -290,7 +304,6 @@ public:
 
 	AnimationState currentAnimState;
 
-
 private:
 	AnimationState nextAnimState;
 
@@ -300,14 +313,14 @@ private:
 public:
 	UkagakaRenderer(SPD2DRenderer D2dRenderer) :
 		pDirect2DRenderer(D2dRenderer) {
-		
+
 	}
 
 	HRESULT PlayAnimation(string id, AnimationState state);
 
 	HRESULT PlayAnimationImmediately(string id, AnimationState state);
 
-	HRESULT LogicRenderUpdate();
+	HRESULT MainLogicUpdate();
 };
 
 typedef UkagakaRenderer* PUkagakaRenderer;

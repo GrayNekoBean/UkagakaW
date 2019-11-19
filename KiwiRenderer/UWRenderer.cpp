@@ -28,6 +28,8 @@
 
 #include "UWRenderer.h"
 
+extern RenderEvent MT_OnGeneralRender;
+extern RenderEvent MT_OnAnimFinishPlay;
 
 UWD2DRenderer::UWD2DRenderer(HWND hWnd):
 	mFactory(NULL),
@@ -588,33 +590,48 @@ HRESULT UkagakaRenderer::PlayAnimationImmediately(string id, AnimationState stat
 	return PlayAnimation(id, state);
 }
 
-HRESULT UkagakaRenderer::LogicRenderUpdate() {
+HRESULT UkagakaRenderer::MainLogicUpdate() {
 	
-	if (bitmapQueue.empty()) {
+	if (pDirect2DRenderer != NULL) {
+		LPCSTR uid = this->pDirect2DRenderer->UkagakaID.c_str();
 
-		if (changing) {
-			currentAnimation->FetchToQueue(bitmapQueue);
-			currentAnimState = nextAnimState;
-			changing = false;
-		}else if(currentAnimState == AnimationState::EndWithLastFrame) {
-			bitmapQueue.push(LastFrame);
-		}else if (currentAnimState == AnimationState::InfinityLoop) {
-			currentAnimation->FetchToQueue(bitmapQueue);
+		if (MT_OnGeneralRender != nullptr) {
+			MT_OnGeneralRender(uid);
 		}
-	}
 
-	if (this->pDirect2DRenderer->IsBufferEmpty()) {
-		int frame = bitmapQueue.front();
-		CPBitmap bm = pDirect2DRenderer->UWBitmapResrouces[frame];
-		LastFrame = frame;
-		bitmapQueue.pop();
-		RenderTask task = RenderTask();
-		
-		UWRenderElement_Bitmap* element1 = new UWRenderElement_Bitmap({ 0, 0 , 100, 100 }, 1.0f, bm);
-		task.AddElement(element1);
-		this->pDirect2DRenderer->FetchBuffer(task);
-	}
+		if (bitmapQueue.empty()) {
+			if (MT_OnAnimFinishPlay != nullptr) {
+				MT_OnAnimFinishPlay(uid);
+			}
+			if (changing) {
+				currentAnimation->FetchToQueue(bitmapQueue);
+				currentAnimState = nextAnimState;
+				changing = false;
+			}
+			else if (currentAnimState == AnimationState::EndWithLastFrame) {
+				bitmapQueue.push(LastFrame);
+			}
+			else if (currentAnimState == AnimationState::InfinityLoop) {
+				currentAnimation->FetchToQueue(bitmapQueue);
+			}
+		}
 
-	return S_OK;
+		if (this->pDirect2DRenderer->IsBufferEmpty()) {
+			int frame = bitmapQueue.front();
+			CPBitmap bm = pDirect2DRenderer->UWBitmapResrouces[frame];
+			LastFrame = frame;
+			bitmapQueue.pop();
+			RenderTask task = RenderTask();
+
+			UWRenderElement_Bitmap* element1 = new UWRenderElement_Bitmap({ 0, 0 , 100, 100 }, 1.0f, bm);
+			task.AddElement(element1);
+			this->pDirect2DRenderer->FetchBuffer(task);
+		}
+
+		return S_OK;
+	}
+	else {
+		return E_FAIL;
+	}
 
 }

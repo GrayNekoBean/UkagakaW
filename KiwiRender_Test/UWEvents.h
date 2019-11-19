@@ -77,7 +77,7 @@ void RegisterMouseEvent(MouseEvent evnt, INT MOUSE_EVENT_TYPE) {
 	}
 }
 
-void OnLeftClick(POINT LocalPos, HWND hWnd) {
+void OnLeftDoubleClick(POINT LocalPos, HWND hWnd) {
 	for (MouseEvent e : mLeftClickEvents) {
 		e(LocalPos, hWnd);
 	}
@@ -107,7 +107,7 @@ void OnLeftDragInWindow(POINT LocalPos, HWND hWnd) {
 	}
 }
 
-void OnRightClick(POINT LocalPos, HWND hWnd) {
+void OnRightDoubleClick(POINT LocalPos, HWND hWnd) {
 	for (MouseEvent e : mRightClickEvents) {
 		e(LocalPos, hWnd);
 	}

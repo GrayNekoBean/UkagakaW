@@ -120,7 +120,7 @@ void Initialize() {
 
 	if (UkagakaInstances_ID["TEST"]->renderer != NULL) {
 		UkagakaInstances_ID["TEST"]->renderer->PlayAnimation("Anim1", AnimationState::EndWithLastFrame);
-		UkagakaInstances_ID["TEST"]->renderer->LogicRenderUpdate();
+		UkagakaInstances_ID["TEST"]->renderer->MainLogicUpdate();
 	}
 
 	LogicThread = std::thread(threadLoop, std::ref(threadLock));
@@ -376,14 +376,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	{
 		int x = LOWORD(lParam);
 		int y = HIWORD(lParam);
-		OnLeftClick({ x, y }, hWnd);
+		OnLeftDoubleClick({ x, y }, hWnd);
 		break;
 	}
 	case WM_RBUTTONDBLCLK:
 	{
 		int x = LOWORD(lParam);
 		int y = HIWORD(lParam);
-		OnRightClick({ x, y }, hWnd);
+		OnRightDoubleClick({ x, y }, hWnd);
 		break;
 	}
 	case WM_LBUTTONDOWN:
@@ -429,7 +429,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 void InnerUpdate()
 {
 	for (auto uki : UkagakaInstances_HWND) {
-		uki.second->renderer->LogicRenderUpdate();
+		uki.second->renderer->MainLogicUpdate();
 	}
 }
 

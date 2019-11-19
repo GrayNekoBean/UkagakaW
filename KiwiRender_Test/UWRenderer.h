@@ -307,7 +307,7 @@ public:
 
 	HRESULT PlayAnimationImmediately(string id, AnimationState state);
 
-	HRESULT LogicRenderUpdate();
+	HRESULT MainLogicUpdate();
 };
 
 typedef UkagakaRenderer* PUkagakaRenderer;
