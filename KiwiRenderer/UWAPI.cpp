@@ -8,7 +8,7 @@
 * This C++ source file is for the Kiwi Renderer, which is part of the Project Ukagaka_W.
 * You are not allowed to copy any code from here without permission.
 *
-* Author: Biobean Derek
+* Author: Gray_Neko_Bean
 *
 * Overall Description:
 * None
@@ -36,6 +36,9 @@ extern RenderEvent MT_OnAnimFinishPlay;
 extern InteractEvent MT_OnUkagakaTouch;
 extern InteractEvent MT_OnUkagakaInteract;
 extern InteractEvent MT_OnElementClick;
+
+extern map<string, SPUkagaka> UkagakaInstances_ID;
+extern map<HWND, SPUkagaka> UkagakaInstances_HWND;
 
 void PassGeneralRenderEvent(RenderEvent _event) {
 	if (MT_OnGeneralRender == nullptr && _event != nullptr) {
@@ -94,8 +97,8 @@ void PlayUkagakaAnimation
 	float sizeX, float sizeY, float opaque) {
 
 	SPUkagaka ukagaka = UkagakaInstances_ID[ukagakaID];
-	HRESULT hr = ukagaka->renderer->PlayAnimation(anim, (AnimationState)animState);
-
+	HRESULT hr = ukagaka->renderer->PlayAnimation(anim, (UWAnimationState)animState);
+	return;
 }
 
 void PlayUkagakaAnimationImmediately
@@ -104,6 +107,21 @@ void PlayUkagakaAnimationImmediately
 	float sizeX, float sizeY, float opaque) {
 
 	SPUkagaka ukagaka = UkagakaInstances_ID[ukagakaID];
-	HRESULT hr = ukagaka->renderer->PlayAnimationImmediately(anim, (AnimationState)animState);
+	HRESULT hr = ukagaka->renderer->PlayAnimationImmediately(anim, (UWAnimationState)animState);
 
 }
+
+void SpeakSentence(LPCSTR ukagakaID, BSTR words)
+{
+	SPUkagaka ukagaka = UkagakaInstances_ID[ukagakaID];
+	HRESULT hr = ukagaka->renderer->PrintText(wstring(words, SysStringLen(words)));
+}
+
+void NewPhase(LPCSTR ukagakaID, BSTR words)
+{
+	SPUkagaka ukagaka = UkagakaInstances_ID[ukagakaID];
+	HRESULT hr = ukagaka->renderer->ClearText();
+	hr = ukagaka->renderer->PrintText(wstring(words, SysStringLen(words)));
+}
+
+

@@ -25,20 +25,34 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Runtime.InteropServices;
 using UkagakaW.Render;
 
 namespace UkagakaW.Core
 {
-    class Ukagaka
+    public class Ukagaka
     {
+        [DllImport("KiwiRenderer.dll", EntryPoint = "SpeakSentence", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void SpeakSentence(string ukagakaId, IntPtr words);
+
+        [DllImport("KiwiRenderer.dll", EntryPoint = "NewPhase", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void NewPhase(string ukagakaId, IntPtr words);
+
+        public string UkagakaID;
+
         public UkagakaRenderer renderer;
 
         public IntPtr hWND;
 
-        public Ukagaka(IntPtr hWnd)
+        public Ukagaka(string ID)
         {
-            this.hWND = hWnd;
+            this.UkagakaID = ID;
+            renderer = new UkagakaRenderer(ID);
+        }
+
+        public void Say(string words)
+        {
+            SpeakSentence(this.UkagakaID, Marshal.StringToBSTR(words));
         }
 
     }

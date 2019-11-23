@@ -8,7 +8,7 @@
 * This C++ header file is for the Kiwi Renderer, which is part of the Project Ukagaka_W.
 * You are not allowed to copy any code from here without permission.
 *
-* Author: Biobean Derek
+* Author: Gray_Neko_Bean
 *
 * Overall Description:
 * None
@@ -46,7 +46,7 @@ extern "C" _declspec(dllexport) void PlayUkagakaAnimationImmediately
 	float sizeX = 0, float sizeY = 0, float opaque = 1.0f);
 
 extern "C" _declspec(dllexport) void SpeakSentence(
-	LPCSTR ukagakaID, LPCWSTR words
+	LPCSTR ukagakaID, BSTR words
 );
 
 extern "C" _declspec(dllexport) void ContinueSpeak(
@@ -54,7 +54,7 @@ extern "C" _declspec(dllexport) void ContinueSpeak(
 );
 
 extern _declspec(dllexport) void NewPhase(
-	LPCSTR ukagakaID, LPCWSTR words
+	LPCSTR ukagakaID, BSTR words
 );
 
 extern _declspec(dllexport) void PauseSpeak(

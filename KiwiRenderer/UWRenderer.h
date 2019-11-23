@@ -8,7 +8,7 @@
 * This C++ header file is for the Kiwi Renderer, which is part of the Project Ukagaka_W.
 * You are not allowed to copy any code from here without permission.
 *
-* Author: Biobean Derek
+* Author: Gray_Neko_Bean
 *
 * Overall Description:
 * None
@@ -28,6 +28,7 @@
 struct UWRenderElement {
 
 	RectangleF rect;
+	float scale;
 	float opaque;
 
 	UWRenderElement() {}
@@ -35,6 +36,15 @@ struct UWRenderElement {
 	UWRenderElement(RectangleF rectangle, float alpha) {
 		rect = rectangle;
 		opaque = alpha;
+
+		scale = 0;
+	}
+
+	UWRenderElement(D2D1_POINT_2F pos, float scale_, float alpha) {
+		scale = scale_;
+		opaque = alpha;
+
+		rect = { pos.x, pos.y, pos.x, pos.y };
 	}
 
 	virtual HRESULT Render(CPDCRenderTarget &DCRT) = 0;
@@ -52,6 +62,51 @@ public:
 
 	UWRenderElement_Bitmap(RectangleF rectangle, float alpha, CPBitmap bm) :UWRenderElement(rectangle, alpha) {
 		bitmap = bm;
+	}
+
+	UWRenderElement_Bitmap(D2D1_POINT_2F pos, float scale_, float alpha, CPBitmap bm) {
+		bitmap = bm;
+		scale = scale_;
+		opaque = alpha;
+
+		float cx, cy;
+		D2D1_SIZE_F orgSize= bm->GetSize();
+		cx = orgSize.width * scale;
+		cy = orgSize.height * scale;
+
+		rect = { pos.x, pos.y, pos.x + cx, pos.y + cy };
+	}
+
+	HRESULT Render(CPDCRenderTarget &DCRT) override;
+};
+typedef UWRenderElement_Bitmap RenderElement_Bitmap;
+typedef UWRenderElement_Bitmap *PRenderElement_Bitmap, *LPRenderElement_Bitmap;
+typedef unique_ptr<UWRenderElement_Bitmap> UPRenderElement_Bitmap;
+typedef shared_ptr<UWRenderElement_Bitmap> SPRenderElement_Bitmap;
+
+struct UWRenderElement_Text : public UWRenderElement {
+
+public:
+	wstring text;
+	CPDWriteTextFormat textFormat;
+	CPBrush textBrush;
+
+	UWRenderElement_Text(RectangleF rectangle, float alpha, wstring txt) : UWRenderElement(rectangle, alpha) {
+		this->text = txt;
+	}
+
+	UWRenderElement_Text(D2D1_POINT_2F pos, D2D1_POINT_2F size, float alpha, wstring txt, CPDWriteTextFormat format, CPBrush brush) {
+		this->text = txt;
+		this->textFormat = format;
+		this->textBrush = brush;
+		
+		this->opaque = alpha;
+
+		this->rect = {
+			pos.x, pos.y,
+			pos.x + size.x, pos.y + size.y
+		};
+
 	}
 
 	HRESULT Render(CPDCRenderTarget &DCRT) override;
@@ -80,8 +135,8 @@ public:
 		HRESULT hr = S_OK;
 		for (RenderElement* element : elements)
 		{
-			if (WndPosition.x + (element->rect.right - element->rect.left) < WndPosition.x + WndSize.cx) {
-				if (WndPosition.y + (element->rect.bottom - element->rect.top) < WndPosition.y + WndSize.cy) {
+			if (WndPosition.x + (element->rect.right - element->rect.left) <= WndPosition.x + WndSize.cx) {
+				if (WndPosition.y + (element->rect.bottom - element->rect.top) <= WndPosition.y + WndSize.cy) {
 					if (SUCCEEDED(hr))
 						element->Render(DCRT);
 					else
@@ -119,14 +174,32 @@ enum FrameRate {
 	_100MS = 1000 //10FPS
 };
 
+
+enum UWTextStyle {
+	paragraph = 0,
+	strong = 1,
+	italic = 2,
+	underline = 3,
+	deleteLine = 4,
+	large = 5
+};
+
+enum UWTextColor {
+	Black = 0, White = 1, DarkGray = 2, LightGray = 3,
+	Red = 10, Orange = 11, Yellow = 12, Green = 13, Blue = 14, PureBlue = 15, Purple = 16, Violet = 17,
+	Pink = 20, Brown = 21
+};
+
+
 class UWD2DRenderer {
 
 public:
 
-	UINT animationFrameRate = FrameRate::_40MS;
-
 	CPDCRenderTarget mDCRT;
 	CPWICImageFactory mWicImgFactory;
+
+	CPD2DFactory mFactory;
+	CPDWriteFactory mDwFactory;
 
 	CPGdiItrpRenderTarget mGdiRT;
 
@@ -138,12 +211,13 @@ public:
 
 	map<tag, SPAnimation> UWAnimationResources = map<tag, SPAnimation>();
 
+	unordered_map<int, CPSolidBrush> UWBrushResources = unordered_map<int, CPSolidBrush>();
+
+	unordered_map<int, CPDWriteTextFormat> TextStyleResources = unordered_map<int, CPDWriteTextFormat>();
+
 private:
 	
 	HWND MainHwnd;
-
-	CPD2DFactory mFactory;
-	CPDWriteFactory mDwFactory;
 
 	queue<RenderTask> mBuffer = queue<RenderTask>();
 	RenderTask mLastBuffer;
@@ -287,7 +361,7 @@ typedef UWRenderBuffer *PRenderBuffer, *LPRenderBuffer;
 typedef unique_ptr<UWRenderBuffer> UPRenderBuffer;
 typedef shared_ptr<UWRenderBuffer> SPRenderBuffer;
 
-enum AnimationState {
+enum UWAnimationState {
 	InfinityLoop = 0,
 	EndWithLastFrame = 1
 };
@@ -298,16 +372,24 @@ public:
 
 	SPD2DRenderer pDirect2DRenderer;
 
+	int CharPerFrame = 1;
+
 	SPAnimation currentAnimation;
 
-	queue<int> bitmapQueue = queue<int>();
+	queue<AnimFrame> bitmapQueue = queue<AnimFrame>();
 
-	AnimationState currentAnimState;
+	int currentBalloonTextIndex = 0;
+
+	wstring currentBalloonText = L"";
+
+	wstring cacheBalloonText = L"";
+
+	UWAnimationState currentAnimState;
 
 private:
-	AnimationState nextAnimState;
+	UWAnimationState nextAnimState;
 
-	int LastFrame;
+	array<int, 8> LastFrame;
 	bool changing;
 
 public:
@@ -316,9 +398,13 @@ public:
 
 	}
 
-	HRESULT PlayAnimation(string id, AnimationState state);
+	HRESULT PlayAnimation(string id, UWAnimationState state);
 
-	HRESULT PlayAnimationImmediately(string id, AnimationState state);
+	HRESULT PlayAnimationImmediately(string id, UWAnimationState state);
+
+	HRESULT PrintText(wstring text, UWTextStyle = UWTextStyle::paragraph, UWTextColor = UWTextColor::Black);
+
+	HRESULT ClearText();
 
 	HRESULT MainLogicUpdate();
 };

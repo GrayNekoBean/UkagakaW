@@ -8,7 +8,7 @@
 * This C++ source file is for the Kiwi Renderer, which is part of the Project Ukagaka_W.
 * You are not allowed to copy any code from here without permission.
 *
-* Author: Biobean Derek
+* Author: Gray_Neko_Bean
 *
 * Overall Description:
 * None
@@ -481,10 +481,23 @@ HRESULT UWD2DRenderer::OnDrawFrame(Milliseconds &deltaTime) {
 
 	if (SUCCEEDED(hr)) {
 
-		mDCRT->BeginDraw();
+		try {
+			mDCRT->BeginDraw();
+		}
+		catch (_com_error &e) {
+			IErrorInfo* info = e.ErrorInfo();
+			BSTR errDesc;
+			BSTR errSource;
+			hr = info->GetDescription(&errDesc);
+			hr = info->GetSource(&errSource);
 
+			_bstr_t err = e.Description();
+			Error(LPCWSTR(err));
+
+			info->Release();
+		}
 		Milliseconds dt;
-		OnFrameRender(this->PopBuffer(), position, size, dt);
+		hr = OnFrameRender(this->PopBuffer(), position, size, dt);
 		//CPBitmap bm = GetBitmapByTag("BM0_Test");
 		//mDCRT->DrawBitmap(bm, { 0, 0, 100, 100 }, 1.0f);
 
@@ -574,7 +587,7 @@ HRESULT UWRenderElement_Bitmap::Render(CPDCRenderTarget &DCRT) {
 	return S_OK;
 }
 
-HRESULT	UkagakaRenderer::PlayAnimation(string id, AnimationState state){
+HRESULT	UkagakaRenderer::PlayAnimation(string id, UWAnimationState state){
 	changing = true;
 
 	currentAnimation = pDirect2DRenderer->UWAnimationResources[id];
@@ -583,7 +596,7 @@ HRESULT	UkagakaRenderer::PlayAnimation(string id, AnimationState state){
 	return S_OK;
 }
 
-HRESULT UkagakaRenderer::PlayAnimationImmediately(string id, AnimationState state) {
+HRESULT UkagakaRenderer::PlayAnimationImmediately(string id, UWAnimationState state) {
 	bitmapQueue = queue<int>();
 	return PlayAnimation(id, state);
 }
@@ -596,9 +609,9 @@ HRESULT UkagakaRenderer::MainLogicUpdate() {
 			currentAnimation->FetchToQueue(bitmapQueue);
 			currentAnimState = nextAnimState;
 			changing = false;
-		}else if(currentAnimState == AnimationState::EndWithLastFrame) {
+		}else if(currentAnimState == UWAnimationState::EndWithLastFrame) {
 			bitmapQueue.push(LastFrame);
-		}else if (currentAnimState == AnimationState::InfinityLoop) {
+		}else if (currentAnimState == UWAnimationState::InfinityLoop) {
 			currentAnimation->FetchToQueue(bitmapQueue);
 		}
 	}

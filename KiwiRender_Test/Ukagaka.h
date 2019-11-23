@@ -8,7 +8,7 @@
 * This C++ header file is for the Kiwi Renderer, which is part of the Project Ukagaka_W.
 * You are not allowed to copy any code from here without permission.
 *
-* Author: Biobean Derek
+* Author: Gray_Neko_Bean
 *
 * Overall Description:
 * None
@@ -64,6 +64,3 @@ UkagakaInstance,
 ;
 typedef unique_ptr<Ukagaka> UPUkagaka;
 typedef shared_ptr<Ukagaka> SPUkagaka;
-
-static map<string, SPUkagaka> UkagakaInstances_ID = map<string, SPUkagaka>();
-static map<HWND, SPUkagaka> UkagakaInstances_HWND = map<HWND, SPUkagaka>();

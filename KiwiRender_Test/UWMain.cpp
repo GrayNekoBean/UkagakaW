@@ -8,7 +8,7 @@
 * This C++ source file is for the Kiwi Renderer, which is part of the Project Ukagaka_W.
 * You are not allowed to copy any code from here without permission.
 *
-* Author: Biobean Derek
+* Author: Gray_Neko_Bean
 *
 * Overall Description:
 * None
@@ -26,6 +26,9 @@
 
 #include "stdafx.h"
 #include "UWMain.h"
+
+extern map<string, SPUkagaka> UkagakaInstances_ID;
+extern map<HWND, SPUkagaka> UkagakaInstances_HWND;
 
 int WINAPI wWinMain(
 	HINSTANCE hInstance,
@@ -119,7 +122,7 @@ void Initialize() {
 	};
 
 	if (UkagakaInstances_ID["TEST"]->renderer != NULL) {
-		UkagakaInstances_ID["TEST"]->renderer->PlayAnimation("Anim1", AnimationState::EndWithLastFrame);
+		UkagakaInstances_ID["TEST"]->renderer->PlayAnimation("Anim1", UWAnimationState::EndWithLastFrame);
 		UkagakaInstances_ID["TEST"]->renderer->MainLogicUpdate();
 	}
 
@@ -439,5 +442,5 @@ void InnerFixedUpdate()
 
 void OnWndRightDown(POINT pos, HWND hWnd) {
 	int iii = 0;
-	UkagakaInstances_HWND[hWnd]->renderer->PlayAnimationImmediately("inm", AnimationState::InfinityLoop);
+	UkagakaInstances_HWND[hWnd]->renderer->PlayAnimationImmediately("inm", UWAnimationState::InfinityLoop);
 }

@@ -28,11 +28,40 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
+
 
 namespace UkagakaW.Render
 {
-    class UkagakaRenderer
+    public enum AnimationState
     {
-        
+        InfinityLoop = 0,
+        EndWithLastFrame = 1
+    }
+
+    public class UkagakaRenderer
+    {
+        [DllImport("KiwiRenderer.dll", EntryPoint = "PlayUkagakaAnimation", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PlayUkagakaAnimation(string ukagakaID, string animID, int animState = 0, float x = 0, float y = 0, float w = 0, float h = 0, float opaque = 1.0f);
+
+        [DllImport("KiwiRenderer.dll", EntryPoint = "PlayUkagakaAnimationImmediately", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void PlayUkagakaAnimationImmediately(string ukagakaID, string animID, int animState = 0, float x = 0, float y = 0, float w = 0, float h = 0, float opaque = 1.0f);
+
+        string ukagakaID;
+
+        public UkagakaRenderer(string uid)
+        {
+            ukagakaID = uid;
+        }
+
+        public void PlayAnim(string anim, AnimationState state)
+        {
+            PlayUkagakaAnimation(this.ukagakaID, anim, (int)state);
+        }
+
+        public void PlayAnimImmediately(string anim, AnimationState state)
+        {
+            PlayUkagakaAnimationImmediately(this.ukagakaID, anim, (int)state);
+        }
     }
 }

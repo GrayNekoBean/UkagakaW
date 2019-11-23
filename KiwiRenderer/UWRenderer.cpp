@@ -8,7 +8,7 @@
 * This C++ source file is for the Kiwi Renderer, which is part of the Project Ukagaka_W.
 * You are not allowed to copy any code from here without permission.
 *
-* Author: Biobean Derek
+* Author: Gray_Neko_Bean
 *
 * Overall Description:
 * None
@@ -30,6 +30,8 @@
 
 extern RenderEvent MT_OnGeneralRender;
 extern RenderEvent MT_OnAnimFinishPlay;
+
+extern UINT animationFrameRate;
 
 UWD2DRenderer::UWD2DRenderer(HWND hWnd):
 	mFactory(NULL),
@@ -103,6 +105,18 @@ HRESULT UWD2DRenderer::CreateDDR() {
 
 		hr = mFactory->CreateDCRenderTarget(&rtp, &this->mDCRT);
 
+		UWBrushResources[UWTextColor::Black] = NULL;
+		hr = mDCRT->CreateSolidColorBrush({255, 11 , 45 , 14}, &UWBrushResources[UWTextColor::Black]);
+
+		IDWriteFontCollection* fontCollection;
+		mDwFactory->GetSystemFontCollection(&fontCollection, FALSE);
+
+		TextStyleResources[UWTextStyle::paragraph] = NULL;
+		CPDWriteTextFormat textFormat;
+		mDwFactory->CreateTextFormat(L"Consolas", fontCollection,
+			DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_NORMAL,
+			DWRITE_FONT_STRETCH::DWRITE_FONT_STRETCH_NORMAL, 12.0f, L"cn-zh", &TextStyleResources[UWTextStyle::paragraph]);
+
 		this->LoadResources(L".\\Resources");
 	}
 
@@ -162,7 +176,7 @@ HRESULT UWD2DRenderer::LoadResources(wstring path) {
 	vector<wstring> bitmapFiles = GetAllFileNamesWithExtName(BitmapPath, L"png");
 	for (wstring bp : bitmapFiles) {
 		if (SUCCEEDED(hr)) {
-			hr = LoadD2DBitmap(BitmapPath+(L"\\")+(bp), WString2String(bp).substr(0, bp.size() - 4));
+			hr = LoadD2DBitmap(BitmapPath+(L"\\")+(bp), WString2String(bp).substr(0, bp.size() - 4), WndSize.cy);
 		}
 		else {
 			return hr;
@@ -254,16 +268,18 @@ HRESULT UWD2DRenderer::LoadD2DBitmap(wstring path, string tag, UINT height, UINT
 			UINT originWidth, originHeight;
 			hr = pSource->GetSize(&originWidth, &originHeight);
 
+			float bitmapScale = 1.0f * originHeight / originWidth;
+
 			if (SUCCEEDED(hr)) {
 				if (width == 0 && height != 0) {
 					//FLOAT scale = static_cast<FLOAT>(height) / static_cast<FLOAT>(originHeight);
 					//width = static_cast<UINT>(static_cast<float>(originWidth) * scale);
-					float scale = (float)(height / originHeight);
-					width = (UINT)((float)originWidth * scale);
+					float scale = (float)(1.0f * height / originHeight);
+					width = (UINT)((float)1.0f * originWidth * scale);
 				}
 				else if (height == 0 && width != 0) {
-					float scale = float(width / originWidth);
-					height = (UINT)((float)originHeight * scale);
+					float scale = float(1.0f * width / originWidth);
+					height = (UINT)((float)1.0f * originHeight * scale);
 				}
 
 				hr = mWicImgFactory->CreateBitmapScaler(&pScaler);
@@ -296,6 +312,8 @@ HRESULT UWD2DRenderer::LoadD2DBitmap(wstring path, string tag, UINT height, UINT
 		if (SUCCEEDED(hr)) {
 			int bmid = AddNewBitmap(tag);
 			hr = this->mDCRT->CreateBitmapFromWicBitmap(pConverter, NULL, &(UWBitmapResrouces[bmid]));
+
+			UWAnimationResources[tag] = SPAnimation(new Animation(bmid));
 		}
 	}
 	SafeRelease(&pDecoder);
@@ -412,8 +430,11 @@ HRESULT UWD2DRenderer::LoadD2DAnimation(wstring path, string tag, UINT height, U
 				hr = this->mDCRT->CreateBitmapFromWicBitmap(pConverter, NULL, &UWBitmapResrouces[bmp]);
 			}
 		}
-		UWAnimationResources[tag] = SPAnimation(new Animation(BitmapMappingTable, tl, (int)(1000 / this->animationFrameRate)));
-		UWAnimationResources[tag]->currentRenderFrameRate = this->animationFrameRate;
+		UWAnimationResources[tag] = SPAnimation(new Animation(BitmapMappingTable, tl, (int)(1000 / animationFrameRate)));
+		UWAnimationResources[tag]->currentRenderFrameRate = animationFrameRate;
+	}
+	else if (extName == L".anm") {
+		//TODO: read .anm bitmap anim description file
 	}
 
 	return hr;
@@ -483,16 +504,28 @@ HRESULT UWD2DRenderer::OnDrawFrame(Milliseconds &deltaTime) {
 
 	if (SUCCEEDED(hr)) {
 
-		mDCRT->BeginDraw();
+		try {
+			mDCRT->BeginDraw();
 
-		Milliseconds dt;
-		OnFrameRender(this->PopBuffer(), position, size, dt);
-		//CPBitmap bm = GetBitmapByTag("BM0_Test");
-		//mDCRT->DrawBitmap(bm, { 0, 0, 100, 100 }, 1.0f);
+			Milliseconds dt;
+			OnFrameRender(this->PopBuffer(), position, size, dt);
+			//CPBitmap bm = GetBitmapByTag("BM0_Test");
+			//mDCRT->DrawBitmap(bm, { 0, 0, 100, 100 }, 1.0f);
 
-		mDCRT->EndDraw();
+			mDCRT->EndDraw();
+		}
+		catch (_com_error &e) {
+			IErrorInfo* info = e.ErrorInfo();
+			BSTR errDesc;
+			BSTR errSource;
+			hr = info->GetDescription(&errDesc);
+			hr = info->GetSource(&errSource);
 
-		//Sleep(40);
+			_bstr_t err = e.Description();
+			Error(LPCWSTR(err));
+
+			info->Release();
+		}
 	}
 	deltaTime = timer.GetMilliseconds();
 	timer.End();
@@ -576,7 +609,16 @@ HRESULT UWRenderElement_Bitmap::Render(CPDCRenderTarget &DCRT) {
 	return S_OK;
 }
 
-HRESULT	UkagakaRenderer::PlayAnimation(string id, AnimationState state){
+HRESULT UWRenderElement_Text::Render(CPDCRenderTarget &DCRT) {
+
+	DCRT->DrawText(text.c_str(), text.size(), textFormat, rect, textBrush,
+		D2D1_DRAW_TEXT_OPTIONS::D2D1_DRAW_TEXT_OPTIONS_NONE,
+		DWRITE_MEASURING_MODE::DWRITE_MEASURING_MODE_NATURAL);
+
+	return S_OK;
+}
+
+HRESULT	UkagakaRenderer::PlayAnimation(string id, UWAnimationState state){
 	changing = true;
 
 	currentAnimation = pDirect2DRenderer->UWAnimationResources[id];
@@ -585,9 +627,25 @@ HRESULT	UkagakaRenderer::PlayAnimation(string id, AnimationState state){
 	return S_OK;
 }
 
-HRESULT UkagakaRenderer::PlayAnimationImmediately(string id, AnimationState state) {
-	bitmapQueue = queue<int>();
+HRESULT UkagakaRenderer::PlayAnimationImmediately(string id, UWAnimationState state) {
+	bitmapQueue = queue<AnimFrame>();
 	return PlayAnimation(id, state);
+}
+
+HRESULT UkagakaRenderer::PrintText(wstring text, UWTextStyle style, UWTextColor color)
+{
+	this->cacheBalloonText = text;
+	return S_OK;
+}
+
+HRESULT UkagakaRenderer::ClearText()
+{
+	this->cacheBalloonText = L"";
+	this->currentBalloonText = L"";
+
+	this->currentBalloonTextIndex = 0;
+
+	return S_OK;
 }
 
 HRESULT UkagakaRenderer::MainLogicUpdate() {
@@ -608,23 +666,48 @@ HRESULT UkagakaRenderer::MainLogicUpdate() {
 				currentAnimState = nextAnimState;
 				changing = false;
 			}
-			else if (currentAnimState == AnimationState::EndWithLastFrame) {
+			else if (currentAnimState == UWAnimationState::EndWithLastFrame) {
 				bitmapQueue.push(LastFrame);
 			}
-			else if (currentAnimState == AnimationState::InfinityLoop) {
+			else if (currentAnimState == UWAnimationState::InfinityLoop) {
 				currentAnimation->FetchToQueue(bitmapQueue);
 			}
 		}
 
 		if (this->pDirect2DRenderer->IsBufferEmpty()) {
-			int frame = bitmapQueue.front();
-			CPBitmap bm = pDirect2DRenderer->UWBitmapResrouces[frame];
+			array<int, 8> frame = bitmapQueue.front();
 			LastFrame = frame;
-			bitmapQueue.pop();
+
 			RenderTask task = RenderTask();
 
-			UWRenderElement_Bitmap* element1 = new UWRenderElement_Bitmap({ 0, 0 , 100, 100 }, 1.0f, bm);
-			task.AddElement(element1);
+			//vector<UPRenderElement> animElements(8);
+
+			for (int i = 0; i < sizeof(frame) / sizeof(frame[0]); i++ ) {
+				if (frame[i] != 0) {
+					CPBitmap bm = pDirect2DRenderer->UWBitmapResrouces[frame[i]];
+
+					RenderElement_Bitmap* element = new UWRenderElement_Bitmap({ 0, 0 }, 1.0f, 1.0f, bm);
+					task.AddElement(element);
+				}
+			}
+			bitmapQueue.pop();
+			
+			if (cacheBalloonText.size() > 0) {
+				if (CharPerFrame == 1) {
+					if (currentBalloonTextIndex < cacheBalloonText.size()) {
+						currentBalloonText += cacheBalloonText[currentBalloonTextIndex];
+						currentBalloonTextIndex++;
+					}
+
+					UWRenderElement_Text* textElement = new UWRenderElement_Text({ 0, 0 }, { 300, 300 }, 1.0f,
+						currentBalloonText, pDirect2DRenderer->TextStyleResources[UWTextStyle::paragraph], (CPBrush)pDirect2DRenderer->UWBrushResources[UWTextColor::Black]);
+
+					task.AddElement(textElement);
+				}
+				else {
+					//TODO: Handle other CharPerFrame situation(different print speed)
+				}
+			}
 			this->pDirect2DRenderer->FetchBuffer(task);
 		}
 

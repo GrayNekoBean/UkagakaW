@@ -8,7 +8,7 @@
 * This C++ header file is for the Kiwi Renderer, which is part of the Project Ukagaka_W.
 * You are not allowed to copy any code from here without permission.
 *
-* Author: Biobean Derek
+* Author: Gray_Neko_Bean
 *
 * Overall Description:
 * None
@@ -273,7 +273,7 @@ typedef UWRenderBuffer *PRenderBuffer, *LPRenderBuffer;
 typedef unique_ptr<UWRenderBuffer> UPRenderBuffer;
 typedef shared_ptr<UWRenderBuffer> SPRenderBuffer;
 
-enum AnimationState {
+enum UWAnimationState {
 	InfinityLoop,
 	EndWithLastFrame
 };
@@ -288,11 +288,11 @@ public:
 
 	queue<int> bitmapQueue = queue<int>();
 
-	AnimationState currentAnimState;
+	UWAnimationState currentAnimState;
 
 
 private:
-	AnimationState nextAnimState;
+	UWAnimationState nextAnimState;
 
 	int LastFrame;
 	bool changing;
@@ -303,9 +303,9 @@ public:
 		
 	}
 
-	HRESULT PlayAnimation(string id, AnimationState state);
+	HRESULT PlayAnimation(string id, UWAnimationState state);
 
-	HRESULT PlayAnimationImmediately(string id, AnimationState state);
+	HRESULT PlayAnimationImmediately(string id, UWAnimationState state);
 
 	HRESULT MainLogicUpdate();
 };

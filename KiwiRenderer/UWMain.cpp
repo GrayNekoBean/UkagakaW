@@ -8,7 +8,7 @@
 * This C++ source file is for the Kiwi Renderer, which is part of the Project Ukagaka_W.
 * You are not allowed to copy any code from here without permission.
 *
-* Author: Biobean Derek
+* Author: Gray_Neko_Bean
 *
 * Overall Description:
 * None
@@ -33,6 +33,9 @@
 //	HINSTANCE hPrevInstance,
 //	LPWSTR cmdLine,
 //	int lineNum) {
+
+extern map<string, SPUkagaka> UkagakaInstances_ID;
+extern map<HWND, SPUkagaka> UkagakaInstances_HWND;
 
 BOOL APIENTRY DllMain(HMODULE hInstance,
 	DWORD  ul_reason_for_call,
@@ -72,7 +75,7 @@ void InitializeMainRenderThread() {
 	RegisterMouseEvent(OnWndLeftClick, MSE_LEFT_CLICK);
 
 	if (UkagakaInstances_ID["TEST"]->renderer != NULL) {
-		UkagakaInstances_ID["TEST"]->renderer->PlayAnimation("Anim1", AnimationState::InfinityLoop);
+		UkagakaInstances_ID["TEST"]->renderer->PlayAnimation("Anim1", UWAnimationState::InfinityLoop);
 		UkagakaInstances_ID["TEST"]->renderer->MainLogicUpdate();
 	}
 
@@ -176,7 +179,7 @@ void OnWndLeftDrag(POINT pos, HWND hWnd) {
 
 void OnWndRightDown(POINT pos, HWND hWnd) {
 	int iii = 0;
-	UkagakaInstances_HWND[hWnd]->renderer->PlayAnimationImmediately("inm", AnimationState::InfinityLoop);
+	UkagakaInstances_HWND[hWnd]->renderer->PlayAnimationImmediately("inm", UWAnimationState::InfinityLoop);
 }
 
 void OnWndLeftClick(POINT pos, HWND hWnd) {

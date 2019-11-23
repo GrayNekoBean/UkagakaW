@@ -8,7 +8,7 @@
 * This C++ header file is for the Kiwi Renderer, which is part of the Project Ukagaka_W.
 * You are not allowed to copy any code from here without permission.
 *
-* Author: Biobean Derek
+* Author: Gray_Neko_Bean
 *
 * Overall Description:
 * None
@@ -71,6 +71,7 @@ typedef ID2D1HwndRenderTarget HWNDRenderTarget, *PHWNDRenderTarget, *LPHWNDRende
 typedef ID2D1RenderTarget RenderTarget, *PRenderTarget, *LPRenderTarget;
 typedef ID2D1Factory D2DFactory, *PD2DFactory, *LPD2DFactory;
 typedef IWICImagingFactory WICImageFactory, *PWICImageFactory, *LPWICImageFactory;
+typedef IDWriteTextFormat DWriteTextFormat, *PDWriteTextFormat, *LPDWdriteTextFormat;
 typedef IDWriteFactory DWriteFactory, *PDWriteFactory, *LPDWriteFactory;
 typedef ID2D1DrawingStateBlock DrawingStateBlock, *PDrawingStateBlock;
 
@@ -80,6 +81,7 @@ typedef CComPtr<ID2D1GdiInteropRenderTarget> CPGdiItrpRenderTarget;
 typedef CComPtr<ID2D1RenderTarget> CPRenderTarget;
 typedef CComPtr<ID2D1Factory> CPD2DFactory;
 typedef CComPtr<IWICImagingFactory> CPWICImageFactory;
+typedef CComPtr<IDWriteTextFormat> CPDWriteTextFormat;
 typedef CComPtr<IDWriteFactory> CPDWriteFactory;
 typedef CComPtr<ID2D1Layer> CPLayer;
 
@@ -92,16 +94,20 @@ typedef D2D1_POINT_2F PointF;
 typedef D2D1_POINT_2L PointL;
 typedef D2D1_POINT_2U PointU;
 
+typedef array<int, 8> AnimFrame;
+
 //Max time for an Animation is 40 seconds
 typedef struct Animation {
 
 	int currentRenderFrameRate = 40;
 
 	UINT FramePerSecond = 25;
-	int frames[1000];
+	AnimFrame (*frames);
 	int realFrameCount = 0;
 
 	Animation();
+
+	Animation(int singleBitmap);
 
 	Animation(vector<int> animFrames, unsigned int FPS = 25);
 
@@ -117,7 +123,7 @@ typedef struct Animation {
 	//~Animation() {
 	//	delete frames;
 	//}
-	HRESULT FetchToQueue(queue<int> &animQueue);
+	HRESULT FetchToQueue(queue<AnimFrame> &animQueue);
 
 } Anim, *PAnimation, *PAnim;
 

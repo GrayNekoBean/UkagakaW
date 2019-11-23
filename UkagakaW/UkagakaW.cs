@@ -6,12 +6,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using UkagakaW.Core;
 using UkagakaW.Util;
 
 namespace UkagakaW
 {
     public class UkagakaW
     {
+        public static Dictionary<string, Ukagaka> ukagakaInstances = new Dictionary<string, Ukagaka>();
+
         public static Thread LogicThread;
 
         [DllImport("KiwiRenderer.dll", EntryPoint = "InitializeMainRenderThread", CallingConvention = CallingConvention.Cdecl)]
@@ -33,6 +36,8 @@ namespace UkagakaW
         public static void Main(string[] args)
         {
             Console.WriteLine("wtf");
+            ukagakaInstances = new Dictionary<string, Ukagaka>();
+
             IntPtr hDLL = Native.LoadLibrary("KiwiRenderer.dll");
 
             if (hDLL == IntPtr.Zero)
@@ -43,6 +48,7 @@ namespace UkagakaW
             }
             else
             {
+                ukagakaInstances.Add("TEST", new Ukagaka("TEST"));
 
                 interactFuncPtr = Marshal.GetFunctionPointerForDelegate<UkagakaInteractEvent>(interactEvent);
                 PassUkagakaInteractEvent(interactFuncPtr);
@@ -63,6 +69,9 @@ namespace UkagakaW
         public static void UkagakaInteract(string ukagakaID, int parameter)
         {
             Console.WriteLine(ukagakaID + " Interacted!");
+            ukagakaInstances[ukagakaID].renderer.PlayAnimImmediately("Test-Chan-0", Render.AnimationState.InfinityLoop);
+
+            ukagakaInstances[ukagakaID].Say("helloWorld");
         }
     }
 }
