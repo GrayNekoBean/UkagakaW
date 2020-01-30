@@ -33,10 +33,13 @@ namespace UkagakaW.Core
     public class Ukagaka
     {
         [DllImport("KiwiRenderer.dll", EntryPoint = "SpeakSentence", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void SpeakSentence(string ukagakaId, IntPtr words);
+        private static extern void SpeakSentence(string ukagakaId, IntPtr words);
 
-        [DllImport("KiwiRenderer.dll", EntryPoint = "NewPhase", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void NewPhase(string ukagakaId, IntPtr words);
+        [DllImport("KiwiRenderer.dll", EntryPoint = "StartNewPhase", CallingConvention = CallingConvention.Cdecl)]
+        private static extern void StartNewPhase(string ukagakaId, IntPtr words);
+
+        [DllImport("KiwiRenderer.dll", EntryPoint = "WaitForTick", CallingConvention = CallingConvention.Cdecl)]
+        private static extern void WaitForTick(string ukagakaId, int ticks);
 
         public string UkagakaID;
 
@@ -55,5 +58,39 @@ namespace UkagakaW.Core
             SpeakSentence(this.UkagakaID, Marshal.StringToBSTR(words));
         }
 
+        public void SayInNewPhase(string words)
+        {
+            StartNewPhase(this.UkagakaID, Marshal.StringToBSTR(words));
+        }
+
+        public void Express(string anim)
+        {
+            renderer.PlayAnimImmediately(anim, AnimationState.InfinityLoop);
+        }
+
+        public void Express(Animation anim)
+        {
+            renderer.PlayAnimImmediately(anim.animationID, anim.defaultState);
+        }
+
+        public void Wait(int ticks)
+        {
+            WaitForTick(this.UkagakaID, ticks);
+        }
+
+        public void WaitForTicks(int ticks)
+        {
+            WaitForTick(this.UkagakaID, ticks);
+        }
+
+        public void WaitForMilliseconds(int ms)
+        {
+
+        }
+
+        public void EndSpeak()
+        {
+
+        }
     }
 }

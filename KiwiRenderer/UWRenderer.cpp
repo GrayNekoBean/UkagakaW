@@ -33,18 +33,18 @@ extern RenderEvent MT_OnAnimFinishPlay;
 
 extern UINT animationFrameRate;
 
-UWD2DRenderer::UWD2DRenderer(HWND hWnd):
-	mFactory(NULL),
-	mDCRT(NULL),
-	MainHwnd(hWnd),
-	mGdiRT(NULL),
-	mWicImgFactory(NULL),
-	mDwFactory(NULL)
+UWD2DRenderer::UWD2DRenderer(HWND hWnd) : mFactory(NULL),
+										  mDCRT(NULL),
+										  MainHwnd(hWnd),
+										  mGdiRT(NULL),
+										  mWicImgFactory(NULL),
+										  mDwFactory(NULL)
 {
 	InitRenderer(hWnd);
 }
 
-HRESULT UWD2DRenderer::InitRenderer(HWND hwnd){
+HRESULT UWD2DRenderer::InitRenderer(HWND hwnd)
+{
 	HRESULT hr;
 
 	MainHwnd = hwnd;
@@ -53,13 +53,11 @@ HRESULT UWD2DRenderer::InitRenderer(HWND hwnd){
 
 	WndPos = {
 		WndRect.top,
-		WndRect.left
-	};
+		WndRect.left};
 
 	WndSize = {
 		WndRect.right - WndRect.left,
-		WndRect.bottom - WndRect.top
-	};
+		WndRect.bottom - WndRect.top};
 
 	hr = this->CreateDIR();
 	hr = this->CreateDDR();
@@ -67,55 +65,63 @@ HRESULT UWD2DRenderer::InitRenderer(HWND hwnd){
 	return hr;
 }
 
-HRESULT UWD2DRenderer::CreateDIR() {
+HRESULT UWD2DRenderer::CreateDIR()
+{
 	HRESULT hr;
 
 	hr = ::D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &this->mFactory);
 
-	if (this->mDwFactory == NULL && SUCCEEDED(hr)) {
+	if (this->mDwFactory == NULL && SUCCEEDED(hr))
+	{
 		hr = DWriteCreateFactory(
 			DWRITE_FACTORY_TYPE_SHARED,
 			__uuidof(this->mDwFactory),
-			reinterpret_cast<IUnknown **>(&this->mDwFactory)
-		);
+			reinterpret_cast<IUnknown **>(&this->mDwFactory));
 	}
 
-	if (!this->mWicImgFactory&&SUCCEEDED(hr)) {
+	if (!this->mWicImgFactory && SUCCEEDED(hr))
+	{
 		hr = CoCreateInstance(
 			CLSID_WICImagingFactory,
 			NULL,
 			CLSCTX_INPROC_SERVER,
-			IID_PPV_ARGS(&this->mWicImgFactory)
-		);
+			IID_PPV_ARGS(&this->mWicImgFactory));
 	}
 
 	return hr;
 }
 
-HRESULT UWD2DRenderer::CreateDDR() {
+HRESULT UWD2DRenderer::CreateDDR()
+{
 	HRESULT hr = S_OK;
 
-	if (mFactory != NULL && this->mDCRT == NULL) {
+	if (mFactory != NULL && this->mDCRT == NULL)
+	{
 		D2D1_RENDER_TARGET_PROPERTIES rtp = RenderTargetProperties();
 		rtp.usage = D2D1_RENDER_TARGET_USAGE::D2D1_RENDER_TARGET_USAGE_NONE;
 		rtp.type = D2D1_RENDER_TARGET_TYPE::D2D1_RENDER_TARGET_TYPE_HARDWARE;
-		rtp.pixelFormat = D2D1::PixelFormat(DXGI_FORMAT::DXGI_FORMAT_B8G8R8A8_UNORM, 
-			D2D1_ALPHA_MODE::D2D1_ALPHA_MODE_PREMULTIPLIED);
+		rtp.pixelFormat = D2D1::PixelFormat(DXGI_FORMAT::DXGI_FORMAT_B8G8R8A8_UNORM,
+											D2D1_ALPHA_MODE::D2D1_ALPHA_MODE_PREMULTIPLIED);
 		rtp.minLevel = D2D1_FEATURE_LEVEL::D2D1_FEATURE_LEVEL_DEFAULT;
 
 		hr = mFactory->CreateDCRenderTarget(&rtp, &this->mDCRT);
 
 		UWBrushResources[UWTextColor::Black] = NULL;
-		hr = mDCRT->CreateSolidColorBrush({255, 11 , 45 , 14}, &UWBrushResources[UWTextColor::Black]);
+		D2D1_COLOR_F brushColor;
+		brushColor.a = 255;
+		brushColor.r = 0;
+		brushColor.g = 0;
+		brushColor.b = 0;
+		hr = mDCRT->CreateSolidColorBrush(brushColor, &UWBrushResources[UWTextColor::Black]);
 
-		IDWriteFontCollection* fontCollection;
+		IDWriteFontCollection *fontCollection;
 		mDwFactory->GetSystemFontCollection(&fontCollection, FALSE);
 
 		TextStyleResources[UWTextStyle::paragraph] = NULL;
 		CPDWriteTextFormat textFormat;
 		mDwFactory->CreateTextFormat(L"Consolas", fontCollection,
-			DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_NORMAL,
-			DWRITE_FONT_STRETCH::DWRITE_FONT_STRETCH_NORMAL, 12.0f, L"cn-zh", &TextStyleResources[UWTextStyle::paragraph]);
+									 DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_NORMAL,
+									 DWRITE_FONT_STRETCH::DWRITE_FONT_STRETCH_NORMAL, 10.0f, L"cn-zh", &TextStyleResources[UWTextStyle::paragraph]);
 
 		this->LoadResources(L".\\Resources");
 	}
@@ -123,7 +129,8 @@ HRESULT UWD2DRenderer::CreateDDR() {
 	return hr;
 }
 
-HRESULT UWD2DRenderer::DiscardDIR() {
+HRESULT UWD2DRenderer::DiscardDIR()
+{
 	this->mDwFactory.Release();
 	this->mFactory.Release();
 	this->mWicImgFactory.Release();
@@ -137,29 +144,34 @@ HRESULT UWD2DRenderer::DiscardDIR() {
 	return S_OK;
 }
 
-HRESULT UWD2DRenderer::DiscardDDR() {
+HRESULT UWD2DRenderer::DiscardDDR()
+{
 	HRESULT hr;
 
 	this->mDCRT.Release();
-	for (CPBitmap b : UWBitmapResrouces) {
+	for (CPBitmap b : UWBitmapResrouces)
+	{
 		b.Release();
 	}
 
 	return S_OK;
 }
 
-HRESULT UWD2DRenderer::CleanUp() {
+HRESULT UWD2DRenderer::CleanUp()
+{
 	this->mDwFactory.Release();
 	this->mFactory.Release();
 	this->mWicImgFactory.Release();
 
 	this->mDCRT.Release();
 
-	if(mGdiRT != NULL)
+	if (mGdiRT != NULL)
 		this->mGdiRT.Release();
 
-	for (CPBitmap b : UWBitmapResrouces) {
-		if (b != NULL) {
+	for (CPBitmap b : UWBitmapResrouces)
+	{
+		if (b != NULL)
+		{
 			b.Release();
 		}
 	}
@@ -167,28 +179,35 @@ HRESULT UWD2DRenderer::CleanUp() {
 	return S_OK;
 }
 
-HRESULT UWD2DRenderer::LoadResources(wstring path) {
-	
+HRESULT UWD2DRenderer::LoadResources(wstring path)
+{
+
 	HRESULT hr = S_OK;
 	wstring BitmapPath = path + L"\\Bitmap";
 	wstring AnimationPath = path + L"\\Animation";
 
 	vector<wstring> bitmapFiles = GetAllFileNamesWithExtName(BitmapPath, L"png");
-	for (wstring bp : bitmapFiles) {
-		if (SUCCEEDED(hr)) {
-			hr = LoadD2DBitmap(BitmapPath+(L"\\")+(bp), WString2String(bp).substr(0, bp.size() - 4), WndSize.cy);
+	for (wstring bp : bitmapFiles)
+	{
+		if (SUCCEEDED(hr))
+		{
+			hr = LoadD2DBitmap(BitmapPath + (L"\\") + (bp), WString2String(bp).substr(0, bp.size() - 4), WndSize.cy);
 		}
-		else {
+		else
+		{
 			return hr;
 		}
 	}
 
 	vector<wstring> animFiles = GetAllFileNamesWithExtName(AnimationPath, L"gif");
-	for (wstring bp : animFiles) {
-		if (SUCCEEDED(hr)) {
-			hr = LoadD2DAnimation(AnimationPath+(L"\\")+(bp), WString2String(bp).substr(0, bp.size()-4));
+	for (wstring bp : animFiles)
+	{
+		if (SUCCEEDED(hr))
+		{
+			hr = LoadD2DAnimation(AnimationPath + (L"\\") + (bp), WString2String(bp).substr(0, bp.size() - 4));
 		}
-		else {
+		else
+		{
 			return hr;
 		}
 	}
@@ -196,33 +215,38 @@ HRESULT UWD2DRenderer::LoadResources(wstring path) {
 	return hr;
 }
 
-void UWD2DRenderer::OnLeftDown(POINT localPos) {
+void UWD2DRenderer::OnLeftDown(POINT localPos)
+{
 	POINT gp = GetMouseGlobalPos();
 
 	this->TempPos = WndPos;
 	this->MouseStartPos = gp;
 }
 
-void UWD2DRenderer::OnLeftDrag_Global(POINT globalPos) {
+void UWD2DRenderer::OnLeftDrag_Global(POINT globalPos)
+{
 	WndPos =
-	{
-		TempPos.x + (globalPos.x - MouseStartPos.x),
-		TempPos.y + (globalPos.y - MouseStartPos.y)
-	};
+		{
+			TempPos.x + (globalPos.x - MouseStartPos.x),
+			TempPos.y + (globalPos.y - MouseStartPos.y)};
 }
 
-HRESULT UWD2DRenderer::BindDC2RenderTarget(HDC hDC) {
+HRESULT UWD2DRenderer::BindDC2RenderTarget(HDC hDC)
+{
 
 	HRESULT hr = S_OK;
 
 	RECT rect;
 	GetClientRect(MainHwnd, &rect);
 
-	if (SUCCEEDED(hr)) {
-		if (mDCRT != NULL) {
+	if (SUCCEEDED(hr))
+	{
+		if (mDCRT != NULL)
+		{
 			hr = mDCRT->BindDC(hDC, &rect);
 		}
-		else {
+		else
+		{
 			hr = E_FAIL;
 		}
 	}
@@ -230,7 +254,8 @@ HRESULT UWD2DRenderer::BindDC2RenderTarget(HDC hDC) {
 	return hr;
 }
 
-int UWD2DRenderer::AddNewBitmap(string tag) {
+int UWD2DRenderer::AddNewBitmap(string tag)
+{
 	int ID = UWBitmapResrouces.size();
 	UWBitmapResrouces.push_back(NULL);
 	BitmapMappingTable[tag] = ID;
@@ -238,68 +263,76 @@ int UWD2DRenderer::AddNewBitmap(string tag) {
 	return ID;
 }
 
-CPBitmap UWD2DRenderer::GetBitmapByTag(string tag) {
+CPBitmap UWD2DRenderer::GetBitmapByTag(string tag)
+{
 	return UWBitmapResrouces[BitmapMappingTable[tag]];
 }
 
-HRESULT UWD2DRenderer::LoadD2DBitmap(wstring path, string tag, UINT height, UINT width) {
+HRESULT UWD2DRenderer::LoadD2DBitmap(wstring path, string tag, UINT height, UINT width)
+{
 	this->mWicImgFactory;
 
-	IWICBitmapDecoder* pDecoder = NULL;
-	IWICBitmapFrameDecode* pSource = NULL;
-	IWICStream* pStream = NULL;
-	IWICFormatConverter* pConverter = NULL;
-	IWICBitmapScaler* pScaler = NULL;
+	IWICBitmapDecoder *pDecoder = NULL;
+	IWICBitmapFrameDecode *pSource = NULL;
+	IWICStream *pStream = NULL;
+	IWICFormatConverter *pConverter = NULL;
+	IWICBitmapScaler *pScaler = NULL;
 
 	HRESULT hr;
 
 	hr = mWicImgFactory->CreateDecoderFromFilename(
-		path.c_str(), NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &pDecoder
-	);
-
+		path.c_str(), NULL, GENERIC_READ, WICDecodeMetadataCacheOnLoad, &pDecoder);
 
 	if (SUCCEEDED(hr))
 		pDecoder->GetFrame(0, &pSource);
 	if (SUCCEEDED(hr))
 		hr = mWicImgFactory->CreateFormatConverter(&pConverter);
 
-	if (SUCCEEDED(hr)) {
-		if (width != 0 || height != 0) {
+	if (SUCCEEDED(hr))
+	{
+		if (width != 0 || height != 0)
+		{
 			UINT originWidth, originHeight;
 			hr = pSource->GetSize(&originWidth, &originHeight);
 
 			float bitmapScale = 1.0f * originHeight / originWidth;
 
-			if (SUCCEEDED(hr)) {
-				if (width == 0 && height != 0) {
+			if (SUCCEEDED(hr))
+			{
+				if (width == 0 && height != 0)
+				{
 					//FLOAT scale = static_cast<FLOAT>(height) / static_cast<FLOAT>(originHeight);
 					//width = static_cast<UINT>(static_cast<float>(originWidth) * scale);
 					float scale = (float)(1.0f * height / originHeight);
 					width = (UINT)((float)1.0f * originWidth * scale);
 				}
-				else if (height == 0 && width != 0) {
+				else if (height == 0 && width != 0)
+				{
 					float scale = float(1.0f * width / originWidth);
 					height = (UINT)((float)1.0f * originHeight * scale);
 				}
 
 				hr = mWicImgFactory->CreateBitmapScaler(&pScaler);
-				if (SUCCEEDED(hr)) {
+				if (SUCCEEDED(hr))
+				{
 					hr = pScaler->Initialize(pSource,
-						width,
-						height,
-						WICBitmapInterpolationMode::WICBitmapInterpolationModeCubic);
+											 width,
+											 height,
+											 WICBitmapInterpolationMode::WICBitmapInterpolationModeCubic);
 				}
-				if (SUCCEEDED(hr)) {
+				if (SUCCEEDED(hr))
+				{
 					hr = pConverter->Initialize(pScaler,
-						GUID_WICPixelFormat32bppPBGRA,
-						WICBitmapDitherType::WICBitmapDitherTypeNone,
-						NULL,
-						0.0F,
-						WICBitmapPaletteType::WICBitmapPaletteTypeMedianCut);
+												GUID_WICPixelFormat32bppPBGRA,
+												WICBitmapDitherType::WICBitmapDitherTypeNone,
+												NULL,
+												0.0F,
+												WICBitmapPaletteType::WICBitmapPaletteTypeMedianCut);
 				}
 			}
 		}
-		else {
+		else
+		{
 			hr = pConverter->Initialize(
 				pSource,
 				GUID_WICPixelFormat32bppPBGRA,
@@ -309,7 +342,8 @@ HRESULT UWD2DRenderer::LoadD2DBitmap(wstring path, string tag, UINT height, UINT
 				WICBitmapPaletteType::WICBitmapPaletteTypeMedianCut);
 		}
 
-		if (SUCCEEDED(hr)) {
+		if (SUCCEEDED(hr))
+		{
 			int bmid = AddNewBitmap(tag);
 			hr = this->mDCRT->CreateBitmapFromWicBitmap(pConverter, NULL, &(UWBitmapResrouces[bmid]));
 
@@ -324,16 +358,17 @@ HRESULT UWD2DRenderer::LoadD2DBitmap(wstring path, string tag, UINT height, UINT
 	return hr;
 }
 
-HRESULT UWD2DRenderer::LoadD2DAnimation(wstring path, string tag, UINT height, UINT width) {
+HRESULT UWD2DRenderer::LoadD2DAnimation(wstring path, string tag, UINT height, UINT width)
+{
 
-	IWICImagingFactory* pWicFac = this->mWicImgFactory;
+	IWICImagingFactory *pWicFac = this->mWicImgFactory;
 
-	IWICBitmapDecoder* pDecoder = NULL;
-	IWICBitmapFrameDecode* pSource = NULL;
-	IWICStream* pStream = NULL;
-	IWICFormatConverter* pConverter = NULL;
-	IWICMetadataQueryReader* pMetaReader = NULL;
-	IWICBitmapScaler* pScaler = NULL;
+	IWICBitmapDecoder *pDecoder = NULL;
+	IWICBitmapFrameDecode *pSource = NULL;
+	IWICStream *pStream = NULL;
+	IWICFormatConverter *pConverter = NULL;
+	IWICMetadataQueryReader *pMetaReader = NULL;
+	IWICBitmapScaler *pScaler = NULL;
 
 	HRESULT hr;
 
@@ -342,11 +377,11 @@ HRESULT UWD2DRenderer::LoadD2DAnimation(wstring path, string tag, UINT height, U
 	TIMELINE_SEC tl = TIMELINE_SEC();
 	vector<int> anim = vector<int>();
 
-	if (extName._Equal(L".gif")) {
+	if (extName._Equal(L".gif"))
+	{
 
 		hr = pWicFac->CreateDecoderFromFilename(
-			path.c_str(), NULL, GENERIC_READ, WICDecodeOptions::WICDecodeMetadataCacheOnLoad, &pDecoder
-		);
+			path.c_str(), NULL, GENERIC_READ, WICDecodeOptions::WICDecodeMetadataCacheOnLoad, &pDecoder);
 
 		UINT frameCount;
 		hr = pDecoder->GetFrameCount(&frameCount);
@@ -354,64 +389,78 @@ HRESULT UWD2DRenderer::LoadD2DAnimation(wstring path, string tag, UINT height, U
 		PROPVARIANT meta;
 		PropVariantInit(&meta);
 
-		for (int f = 0; f < frameCount; f++) {
+		for (int f = 0; f < frameCount; f++)
+		{
 
 			int frameDelay = 40;
 
-			if (SUCCEEDED(hr)) {
+			if (SUCCEEDED(hr))
+			{
 				hr = pDecoder->GetFrame(f, &pSource);
 			}
 
-			if (SUCCEEDED(hr)) {
+			if (SUCCEEDED(hr))
+			{
 				hr = pSource->GetMetadataQueryReader(&pMetaReader);
-				if (SUCCEEDED(hr)) {
+				if (SUCCEEDED(hr))
+				{
 					hr = pMetaReader->GetMetadataByName(L"/grctlext/Delay", &meta);
 					hr = (meta.vt == VT_UI2 ? S_OK : E_FAIL);
-					if (SUCCEEDED(hr)) {
+					if (SUCCEEDED(hr))
+					{
 						frameDelay = meta.uiVal * 10;
 					}
 				}
 			}
 
-			if (SUCCEEDED(hr)) {
+			if (SUCCEEDED(hr))
+			{
 				hr = pWicFac->CreateFormatConverter(&pConverter);
 			}
 
-			if (SUCCEEDED(hr)) {
-				if (width != 0 || height != 0) {
+			if (SUCCEEDED(hr))
+			{
+				if (width != 0 || height != 0)
+				{
 					UINT originWidth, originHeight;
 					hr = pSource->GetSize(&originWidth, &originHeight);
 
-					if (SUCCEEDED(hr)) {
-						if (width == 0) {
+					if (SUCCEEDED(hr))
+					{
+						if (width == 0)
+						{
 							//FLOAT scale = static_cast<FLOAT>(height) / static_cast<FLOAT>(originHeight);
 							//width = static_cast<UINT>(static_cast<float>(originWidth) * scale);
 							float scale = (float)(width / originWidth);
 							width = (UINT)((float)originWidth * scale);
 						}
-						if (height == 0) {
+						if (height == 0)
+						{
 							float scale = float(width / originWidth);
 							height = (UINT)((float)originHeight * scale);
 						}
 
 						hr = pWicFac->CreateBitmapScaler(&pScaler);
-						if (SUCCEEDED(hr)) {
+						if (SUCCEEDED(hr))
+						{
 							hr = pScaler->Initialize(pSource,
-								width,
-								height,
-								WICBitmapInterpolationMode::WICBitmapInterpolationModeCubic);
+													 width,
+													 height,
+													 WICBitmapInterpolationMode::WICBitmapInterpolationModeCubic);
 						}
-						if (SUCCEEDED(hr)) {
+						if (SUCCEEDED(hr))
+						{
 							hr = pConverter->Initialize(pScaler,
-								GUID_WICPixelFormat32bppPBGRA,
-								WICBitmapDitherType::WICBitmapDitherTypeNone,
-								NULL,
-								0.0F,
-								WICBitmapPaletteType::WICBitmapPaletteTypeMedianCut);
+														GUID_WICPixelFormat32bppPBGRA,
+														WICBitmapDitherType::WICBitmapDitherTypeNone,
+														NULL,
+														0.0F,
+														WICBitmapPaletteType::WICBitmapPaletteTypeMedianCut);
 						}
 					}
 				}
-				else {
+				else
+				{
 					hr = pConverter->Initialize(
 						pSource,
 						GUID_WICPixelFormat32bppPBGRA,
@@ -422,7 +471,8 @@ HRESULT UWD2DRenderer::LoadD2DAnimation(wstring path, string tag, UINT height, U
 				}
 			}
 
-			if (SUCCEEDED(hr)) {
+			if (SUCCEEDED(hr))
+			{
 				string tg = tag + "_" + std::to_string(f);
 				tl.push_back(pair<Milliseconds, string>(frameDelay, tg));
 				int bmp = AddNewBitmap(tg);
@@ -433,15 +483,17 @@ HRESULT UWD2DRenderer::LoadD2DAnimation(wstring path, string tag, UINT height, U
 		UWAnimationResources[tag] = SPAnimation(new Animation(BitmapMappingTable, tl, (int)(1000 / animationFrameRate)));
 		UWAnimationResources[tag]->currentRenderFrameRate = animationFrameRate;
 	}
-	else if (extName == L".anm") {
+	else if (extName == L".anm")
+	{
 		//TODO: read .anm bitmap anim description file
 	}
 
 	return hr;
 }
 
-HRESULT UWD2DRenderer::CreateDCRTEnv(POINT position, SIZE size) {
-	
+HRESULT UWD2DRenderer::CreateDCRTEnv(POINT position, SIZE size)
+{
+
 	int ix, iy;
 
 	ix = size.cx;
@@ -450,7 +502,7 @@ HRESULT UWD2DRenderer::CreateDCRTEnv(POINT position, SIZE size) {
 	DCRTENV_SCREENDC = GetDC(NULL);
 	DCRTENV_MEMDC = CreateCompatibleDC(DCRTENV_SCREENDC);
 
-	BYTE * pBits;
+	BYTE *pBits;
 	BITMAPINFOHEADER bmih;
 	ZeroMemory(&bmih, sizeof(BITMAPINFOHEADER));
 
@@ -458,7 +510,7 @@ HRESULT UWD2DRenderer::CreateDCRTEnv(POINT position, SIZE size) {
 	bmih.biWidth = ix;
 	bmih.biHeight = iy;
 	bmih.biPlanes = 1;
-	bmih.biBitCount = 32; //这里一定要是32 16位色没有alpha通道
+	bmih.biBitCount = 32; //锟斤拷锟斤拷一锟斤拷要锟斤拷32 16位色没锟斤拷alpha通锟斤拷
 	bmih.biCompression = BI_RGB;
 	bmih.biSizeImage = 0;
 	bmih.biXPelsPerMeter = 0;
@@ -466,7 +518,7 @@ HRESULT UWD2DRenderer::CreateDCRTEnv(POINT position, SIZE size) {
 	bmih.biClrUsed = 0;
 	bmih.biClrImportant = 0;
 
-	DCRTENV_CANVAS = CreateDIBSection(NULL, (BITMAPINFO *)&bmih, 0, (VOID**)&pBits, NULL, 0);
+	DCRTENV_CANVAS = CreateDIBSection(NULL, (BITMAPINFO *)&bmih, 0, (VOID **)&pBits, NULL, 0);
 
 	SelectObject(DCRTENV_MEMDC, DCRTENV_CANVAS);
 
@@ -475,18 +527,19 @@ HRESULT UWD2DRenderer::CreateDCRTEnv(POINT position, SIZE size) {
 	return hr;
 }
 
-void UWD2DRenderer::ReleaseDCRTEnv() {
-	
+void UWD2DRenderer::ReleaseDCRTEnv()
+{
+
 	DeleteDC(DCRTENV_MEMDC);
 	DeleteDC(DCRTENV_SCREENDC);
 	DeleteObject(DCRTENV_CANVAS);
 
 	ReleaseDC(MainHwnd, DCRTENV_MEMDC);
 	ReleaseDC(NULL, DCRTENV_SCREENDC);
-
 }
 
-HRESULT UWD2DRenderer::OnDrawFrame(Milliseconds &deltaTime) {
+HRESULT UWD2DRenderer::OnDrawFrame(Milliseconds &deltaTime)
+{
 
 	Timer timer = Timer();
 	timer.Start();
@@ -498,13 +551,15 @@ HRESULT UWD2DRenderer::OnDrawFrame(Milliseconds &deltaTime) {
 
 	hr = CreateDCRTEnv(position, size);
 
-	HDC screenDC = DCRTENV_SCREENDC, 
+	HDC screenDC = DCRTENV_SCREENDC,
 		memDC = DCRTENV_MEMDC;
 	HBITMAP canvas = DCRTENV_CANVAS;
 
-	if (SUCCEEDED(hr)) {
+	if (SUCCEEDED(hr))
+	{
 
-		try {
+		try
+		{
 			mDCRT->BeginDraw();
 
 			Milliseconds dt;
@@ -514,8 +569,9 @@ HRESULT UWD2DRenderer::OnDrawFrame(Milliseconds &deltaTime) {
 
 			mDCRT->EndDraw();
 		}
-		catch (_com_error &e) {
-			IErrorInfo* info = e.ErrorInfo();
+		catch (_com_error &e)
+		{
+			IErrorInfo *info = e.ErrorInfo();
 			BSTR errDesc;
 			BSTR errSource;
 			hr = info->GetDescription(&errDesc);
@@ -530,7 +586,8 @@ HRESULT UWD2DRenderer::OnDrawFrame(Milliseconds &deltaTime) {
 	deltaTime = timer.GetMilliseconds();
 	timer.End();
 
-	if (hr == D2DERR_RECREATE_TARGET) {
+	if (hr == D2DERR_RECREATE_TARGET)
+	{
 		hr = S_OK;
 		DiscardDDR();
 		CreateDDR();
@@ -540,13 +597,14 @@ HRESULT UWD2DRenderer::OnDrawFrame(Milliseconds &deltaTime) {
 	return hr;
 }
 
-void UWD2DRenderer::RenderOnScreen() {
+void UWD2DRenderer::RenderOnScreen()
+{
 
 	HRESULT hr = S_OK;
 
-	POINT	pPos = WndPos;
-	POINT	pSrc = { 0, 0 };
-	SIZE	sizeWnd = WndSize;
+	POINT pPos = WndPos;
+	POINT pSrc = {0, 0};
+	SIZE sizeWnd = WndSize;
 
 	BLENDFUNCTION blendFunc;
 	blendFunc.AlphaFormat = AC_SRC_ALPHA;
@@ -560,65 +618,138 @@ void UWD2DRenderer::RenderOnScreen() {
 	ReleaseDCRTEnv();
 }
 
-HRESULT UWD2DRenderer::OnFrameRender(RenderTask task, POINT position, SIZE canvasSize, _Out_ Milliseconds& deltaTime) {
+HRESULT UWD2DRenderer::OnFrameRender(RenderTask task, POINT position, SIZE canvasSize, _Out_ Milliseconds &deltaTime)
+{
 	Timer timer = Timer();
 	timer.Start();
-	if (!task.IsEmpty()) {
+	if (!task.IsEmpty())
+	{
 		task.Render(mDCRT, position, canvasSize);
 		mLastBuffer = task;
 	}
-	else {
+	else
+	{
 		mLastBuffer.Render(mDCRT, position, canvasSize);
 	}
-		
+
 	deltaTime = timer.GetMilliseconds();
 	timer.End();
 
 	return S_OK;
 }
 
-RenderTask UWD2DRenderer::PopBuffer() {
-	if (mBuffer.size() > 0) {
+RenderTask UWD2DRenderer::PopBuffer()
+{
+	if (mBuffer.size() > 0)
+	{
 		RenderTask task = mBuffer.front();
 		mBuffer.pop();
 		return task;
 	}
-	else {
+	else
+	{
 		Warning(L"Buffer pool empty, frame render stroked, please check any time-cost codes in Main Thread");
 		return RenderTask();
 	}
 }
 
-BOOL UWD2DRenderer::FetchBuffer(RenderTask renderTask) {
-	if (mBuffer.size() < 1) {
+BOOL UWD2DRenderer::FetchBuffer(RenderTask renderTask)
+{
+	if (mBuffer.size() < 1)
+	{
 		this->mBuffer.push(renderTask);
 		return true;
 	}
-	else {
+	else
+	{
 		return false;
 	}
 }
 
-BOOL UWD2DRenderer::IsBufferEmpty() {
+BOOL UWD2DRenderer::IsBufferEmpty()
+{
 	return mBuffer.empty();
 }
 
-
-HRESULT UWRenderElement_Bitmap::Render(CPDCRenderTarget &DCRT) {
+HRESULT UWRenderElement_Bitmap::Render(CPDCRenderTarget &DCRT)
+{
 	DCRT->DrawBitmap(bitmap, rect, opaque);
 	return S_OK;
 }
 
-HRESULT UWRenderElement_Text::Render(CPDCRenderTarget &DCRT) {
+HRESULT UWRenderElement_Text::Render(CPDCRenderTarget &DCRT)
+{
 
 	DCRT->DrawText(text.c_str(), text.size(), textFormat, rect, textBrush,
-		D2D1_DRAW_TEXT_OPTIONS::D2D1_DRAW_TEXT_OPTIONS_NONE,
-		DWRITE_MEASURING_MODE::DWRITE_MEASURING_MODE_NATURAL);
+				   D2D1_DRAW_TEXT_OPTIONS::D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT,
+				   DWRITE_MEASURING_MODE::DWRITE_MEASURING_MODE_NATURAL);
 
 	return S_OK;
 }
 
-HRESULT	UkagakaRenderer::PlayAnimation(string id, UWAnimationState state){
+//
+//UkagakaTask::UkagakaTask(wstring text)
+//{
+//	// size_t len = lstrlenW(text.c_str());
+//	// Parameters = malloc(len * sizeof(WCHAR) + 1);
+//	// wcscpy_s(static_cast<LPWSTR>(Parameters), len * sizeof(WCHAR), text.c_str());
+//	this->strParameter = text;
+//}
+
+//UkagakaTask::UkagakaTask(UkagakaTaskType type, void *parameter)
+//{
+//	TaskType = type;
+//	// switch (type) {
+//	// case UkagakaTaskType::TextOutput:
+//	// {
+//	// 	size_t size = lstrlenW(static_cast<LPCWSTR>(parameter)) * sizeof(WCHAR);
+//	// 	Parameters = malloc(size);
+//	// 	wcscpy_s(static_cast<LPWSTR>(Parameters), size, static_cast<LPCWSTR>(parameter));
+//	// 	break;
+//	// }
+//	// case UkagakaTaskType::Wait:
+//	// {
+//	// 	Parameters = parameter;
+//	// 	break;
+//	// }
+//	// }
+//	switch (type)
+//	{
+//	case UkagakaTaskType::TextOutput:
+//	{
+//		this->strParameter = *((wstring *)parameter);
+//		break;
+//	}
+//	case UkagakaTaskType::Wait:
+//	{
+//		this->intParameter = *((int *)parameter);
+//		break;
+//	}
+//	}
+//}
+
+//wstring UkagakaTask::GetString()
+//{
+//	// LPCWSTR str = static_cast<LPCWSTR>(Parameters);
+//	// return wstring(str);
+//
+//	return this->strParameter;
+//}
+//
+//SPAnimation UkagakaTask::GetAnimation()
+//{
+//	// return *((SPAnimation*)Parameters);
+//	return this->animationParameter;
+//}
+//
+//int UkagakaTask::GetInteger()
+//{
+//	// return *((int*)Parameters);
+//	return this->intParameter;
+//}
+
+HRESULT UkagakaRenderer::PlayAnimation(string id, UWAnimationState state)
+{
 	changing = true;
 
 	currentAnimation = pDirect2DRenderer->UWAnimationResources[id];
@@ -627,14 +758,63 @@ HRESULT	UkagakaRenderer::PlayAnimation(string id, UWAnimationState state){
 	return S_OK;
 }
 
-HRESULT UkagakaRenderer::PlayAnimationImmediately(string id, UWAnimationState state) {
+HRESULT UkagakaRenderer::PlayAnimationImmediately(string id, UWAnimationState state)
+{
 	bitmapQueue = queue<AnimFrame>();
 	return PlayAnimation(id, state);
 }
 
-HRESULT UkagakaRenderer::PrintText(wstring text, UWTextStyle style, UWTextColor color)
+HRESULT UkagakaRenderer::PlayAnimationTB(string uid, UWAnimationState state, bool immediately){
+	PushTask(UkagakaTaskAnimation(uid, state, immediately));
+	return true;
+}
+
+HRESULT UkagakaRenderer::OutputTextTB(wstring text, UWTextStyle style, UWTextColor color)
 {
-	this->cacheBalloonText = text;
+	this->ShowBalloon = true;
+	//this->taskBuffer.push(text);
+
+	this->PushTask(UkagakaTaskTextOutput(text));
+	return S_OK;
+}
+
+HRESULT UkagakaRenderer::WaitTicksTB(int ticks)
+{
+	if (ticks > 0)
+	{
+		PushTask(UkagakaTaskWait(ticks));
+		return S_OK;
+	}
+	else
+	{
+		return E_FAIL;
+	}
+}
+
+HRESULT UkagakaRenderer::NewPhaseTB() {
+	PushTask(UkagakaTaskNewPhase());
+	return S_OK;
+}
+
+HRESULT UkagakaRenderer::EndSectionTB() {
+	PushTask(UkagakaTaskEnd());
+	return S_OK;
+}
+
+HRESULT UkagakaRenderer::PushTask(UkagakaTask task){
+	UkagakaTask t = task;
+
+	if (this->currentStatusEnd)
+	{
+		if(t.TaskType != -1){
+			this->ClearText();
+			this->ClearBuffer();
+			this->HideBalloon();
+		}
+	}
+
+	taskBuffer.push(t);
+
 	return S_OK;
 }
 
@@ -648,33 +828,80 @@ HRESULT UkagakaRenderer::ClearText()
 	return S_OK;
 }
 
-HRESULT UkagakaRenderer::MainLogicUpdate() {
-	
-	if (pDirect2DRenderer != NULL) {
+UkagakaTask::operator UkagakaTaskAnimation()
+{
+	return UkagakaTaskAnimation(strPar, (UWAnimationState)intPar, boolPar);
+}
+
+UkagakaTask::operator UkagakaTaskTextOutput()
+{
+	return UkagakaTaskTextOutput(wstrPar);
+}
+
+UkagakaTask::operator UkagakaTaskWait() 
+{
+	return UkagakaTaskWait(intPar);
+}
+
+UkagakaTask::operator UkagakaTaskEnd() 
+{
+	return UkagakaTaskEnd();
+}
+
+UkagakaTask::operator UkagakaTaskNewPhase() {
+	return UkagakaTaskNewPhase();
+}
+
+HRESULT UkagakaRenderer::HideBalloon()
+{
+	this->ShowBalloon = false;
+
+	return S_OK;
+}
+
+HRESULT UkagakaRenderer::ClearBuffer()
+{
+	this->taskBuffer = queue<UkagakaTask>();
+
+	return S_OK;
+}
+
+HRESULT UkagakaRenderer::MainLogicUpdate()
+{
+
+	if (pDirect2DRenderer != NULL)
+	{
 		LPCSTR uid = this->pDirect2DRenderer->UkagakaID.c_str();
 
-		if (MT_OnGeneralRender != nullptr) {
+		if (MT_OnGeneralRender != nullptr)
+		{
 			MT_OnGeneralRender(uid);
 		}
 
-		if (bitmapQueue.empty()) {
-			if (MT_OnAnimFinishPlay != nullptr) {
+		if (bitmapQueue.empty())
+		{
+			if (MT_OnAnimFinishPlay != nullptr)
+			{
 				MT_OnAnimFinishPlay(uid);
 			}
-			if (changing) {
+			if (changing)
+			{
 				currentAnimation->FetchToQueue(bitmapQueue);
 				currentAnimState = nextAnimState;
 				changing = false;
 			}
-			else if (currentAnimState == UWAnimationState::EndWithLastFrame) {
+			else if (currentAnimState == UWAnimationState::EndWithLastFrame)
+			{
 				bitmapQueue.push(LastFrame);
 			}
-			else if (currentAnimState == UWAnimationState::InfinityLoop) {
+			else if (currentAnimState == UWAnimationState::InfinityLoop)
+			{
 				currentAnimation->FetchToQueue(bitmapQueue);
 			}
 		}
 
-		if (this->pDirect2DRenderer->IsBufferEmpty()) {
+		if (this->pDirect2DRenderer->IsBufferEmpty())
+		{
 			array<int, 8> frame = bitmapQueue.front();
 			LastFrame = frame;
 
@@ -682,30 +909,148 @@ HRESULT UkagakaRenderer::MainLogicUpdate() {
 
 			//vector<UPRenderElement> animElements(8);
 
-			for (int i = 0; i < sizeof(frame) / sizeof(frame[0]); i++ ) {
-				if (frame[i] != 0) {
+			for (int i = 0; i < sizeof(frame) / sizeof(frame[0]); i++)
+			{
+				if (frame[i] != 0)
+				{
 					CPBitmap bm = pDirect2DRenderer->UWBitmapResrouces[frame[i]];
 
-					RenderElement_Bitmap* element = new UWRenderElement_Bitmap({ 0, 0 }, 1.0f, 1.0f, bm);
+					RenderElement_Bitmap *element = new UWRenderElement_Bitmap({0, 0}, 1.0f, 1.0f, bm);
 					task.AddElement(element);
 				}
 			}
 			bitmapQueue.pop();
-			
-			if (cacheBalloonText.size() > 0) {
-				if (CharPerFrame == 1) {
-					if (currentBalloonTextIndex < cacheBalloonText.size()) {
-						currentBalloonText += cacheBalloonText[currentBalloonTextIndex];
-						currentBalloonTextIndex++;
+
+			if (ShowBalloon)
+			{
+				RenderElement_Bitmap *balloon = new UWRenderElement_Bitmap({125, 10}, 0.7f, 1.0f,
+																		   pDirect2DRenderer->GetBitmapByTag("balloon-default"));
+				task.AddElement(balloon);
+			}
+
+			if (cacheBalloonText.size() > 0)
+			{
+				if (CharPerFrame == 1)
+				{
+					if (TextOutputWaitTick <= 0)
+					{
+						if (currentBalloonTextIndex < cacheBalloonText.size())
+						{
+							currentBalloonText += cacheBalloonText[currentBalloonTextIndex];
+							currentBalloonTextIndex++;
+						}
+						else
+						{
+							if (taskBuffer.size() > 0)
+							{
+								UkagakaTask task = taskBuffer.front();
+								UkagakaTaskType type = task.TaskType;
+
+								if (type == NewPhase)
+								{
+									this->ClearText();
+								}
+
+								switch (type)
+								{
+								case -1:
+								{
+									this->currentStatusEnd = true;
+									break;
+								}
+								case 1:
+									//this->ClearText();
+									this->cacheBalloonText += ((UkagakaTaskTextOutput)task).GetString();
+									break;
+								case 2:
+									this->TextOutputWaitTick += static_cast<UkagakaTaskWait>(task).GetTicks();
+									break;
+								case 3:
+								{
+									UkagakaTaskAnimation ta = static_cast<UkagakaTaskAnimation>(task);
+									if (!ta.IsImmediate()) {
+										this->PlayAnimation(ta.GetAnimation(), ta.GetState());
+									}
+									else {
+										this->PlayAnimationImmediately(ta.GetAnimation(), ta.GetState());
+									}
+									break;
+								}
+								default:
+									Error(L"Undefined task type");
+									break;
+								}
+
+								taskBuffer.pop();
+							}
+						}
+					}
+					else
+					{
+						TextOutputWaitTick -= 1;
 					}
 
-					UWRenderElement_Text* textElement = new UWRenderElement_Text({ 0, 0 }, { 300, 300 }, 1.0f,
-						currentBalloonText, pDirect2DRenderer->TextStyleResources[UWTextStyle::paragraph], (CPBrush)pDirect2DRenderer->UWBrushResources[UWTextColor::Black]);
+					try
+					{
+						UWRenderElement_Text *textElement = new UWRenderElement_Text(
+							{175, 50}, {125, 250}, 1.0f,
+							currentBalloonText, pDirect2DRenderer->TextStyleResources[UWTextStyle::paragraph],
+							(CPBrush)pDirect2DRenderer->UWBrushResources[UWTextColor::Black]);
 
-					task.AddElement(textElement);
+						task.AddElement(textElement);
+					}
+					catch (exception e)
+					{
+					}
 				}
-				else {
+				else
+				{
 					//TODO: Handle other CharPerFrame situation(different print speed)
+				}
+			}
+			else
+			{
+				if (taskBuffer.size() > 0)
+				{
+					UkagakaTask task = taskBuffer.front();
+					UkagakaTaskType type = task.TaskType;
+
+					if (type == NewPhase)
+					{
+						this->ClearText();
+					}
+
+					switch (type)
+					{
+					case -1:
+					{
+						this->currentStatusEnd = true;
+						break;
+					}
+					case 1:
+						//this->ClearText();
+						this->cacheBalloonText += ((UkagakaTaskTextOutput)task).GetString();
+						break;
+					case 2:
+						this->TextOutputWaitTick += static_cast<UkagakaTaskWait>(task).GetTicks();
+						break;
+					case 3:
+					{
+						UkagakaTaskAnimation ta = static_cast<UkagakaTaskAnimation>(task);
+						if (!ta.IsImmediate()) {
+							this->PlayAnimation(ta.GetAnimation(), ta.GetState());
+						}
+						else {
+							this->PlayAnimationImmediately(ta.GetAnimation(), ta.GetState());
+						}
+						break;
+					}
+					default:
+						Error(L"Undefined task type");
+						break;
+					}
+
+					taskBuffer.pop();
 				}
 			}
 			this->pDirect2DRenderer->FetchBuffer(task);
@@ -713,8 +1058,8 @@ HRESULT UkagakaRenderer::MainLogicUpdate() {
 
 		return S_OK;
 	}
-	else {
+	else
+	{
 		return E_FAIL;
 	}
-
 }

@@ -29,6 +29,10 @@ extern "C" _declspec(dllexport) void PassGeneralRenderEvent(RenderEvent _event);
 
 extern "C" _declspec(dllexport) void PassAnimPlayFinishEvent(RenderEvent _event);
 
+extern "C" _declspec(dllexport) void PassSpeakFinishEvent(RenderEvent _event);
+
+extern "C" _declspec(dllexport) void PassWaitFinishEvent(RenderEvent _event);
+
 extern "C" _declspec(dllexport) void PassUkagakaTouchEvent(InteractEvent _event);
 
 extern "C" _declspec(dllexport) void PassElementClickEvent(InteractEvent _event);
@@ -53,22 +57,26 @@ extern "C" _declspec(dllexport) void ContinueSpeak(
 	LPCSTR ukagakaID, LPCWSTR words
 );
 
-extern _declspec(dllexport) void NewPhase(
+extern "C" _declspec(dllexport) void StartNewPhase(
 	LPCSTR ukagakaID, BSTR words
 );
 
-extern _declspec(dllexport) void PauseSpeak(
+extern "C" _declspec(dllexport) void PauseSpeak(
 	LPCSTR ukagakaID, int milliseconds
 );
 
-extern _declspec(dllexport) void EndSpeak(
+extern "C" _declspec(dllexport) void EndSpeak(
 	LPCSTR ukagakaID
 );
 
-extern _declspec(dllexport) void InterruptWithNewPhase(
+extern "C" _declspec(dllexport) void InterruptWithNewPhase(
 	LPCSTR ukagakaID, LPCWSTR words
 );
 
-extern _declspec(dllexport) void HideBalloon(
+extern "C" _declspec(dllexport) void HideBalloon(
 	LPCSTR ukagakaID
+);
+
+extern "C" _declspec(dllexport) void WaitForTick(
+	LPCSTR ukagakaId, int ticks
 );

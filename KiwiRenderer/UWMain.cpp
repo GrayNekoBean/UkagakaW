@@ -255,7 +255,7 @@ HWND CreateUkagakaInstance(LPCWSTR name, LPCSTR id) {
 	HWND hWindow = CreateWindowEx(WS_EX_LAYERED, UkagakaID, name, 
 		WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_POPUP
 		/*WS_CAPTION*/,
-		0, 0, 300, 300, NULL, NULL, AppInstance, NULL);
+		0, 0, 350, 300, NULL, NULL, AppInstance, NULL);
 
 	UkagakaInstances_ID.at(id)->Initiate(hWindow);
 	UkagakaInstances_HWND[hWindow] = UkagakaInstances_ID[id];

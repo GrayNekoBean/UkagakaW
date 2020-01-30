@@ -96,7 +96,12 @@ public:
 	}
 
 	UWRenderElement_Text(D2D1_POINT_2F pos, D2D1_POINT_2F size, float alpha, wstring txt, CPDWriteTextFormat format, CPBrush brush) {
-		this->text = txt;
+		try {
+			this->text = wstring(txt);
+		}
+		catch (exception e) {
+			Error(L"hell");
+		}
 		this->textFormat = format;
 		this->textBrush = brush;
 		
@@ -247,6 +252,8 @@ public:
 	*/
 	HRESULT OnDrawFrame(Milliseconds &deltaTime);
 
+	CPBitmap GetBitmapByTag(string tag);
+
 	void RenderOnScreen();
 
 	void OnLeftDown(POINT pos);
@@ -283,8 +290,6 @@ private:
 	HRESULT LoadD2DAnimation(wstring path, string tag, UINT height = 0, UINT width = 0);
 
 	int AddNewBitmap(string tag);
-
-	CPBitmap GetBitmapByTag(string tag);
 
 	/*
 	<summary>
@@ -366,6 +371,146 @@ enum UWAnimationState {
 	EndWithLastFrame = 1
 };
 
+enum UkagakaTaskType {
+	NewPhase = 0,
+	TextOutput = 1,
+	Wait = 2,
+	SwitchAnimation = 3,
+	AudioPlay = 4,
+	RunFunction = 0x114514,
+	End = -1
+};
+
+class UkagakaTaskAnimation;
+class UkagakaTaskTextOutput;
+class UkagakaTaskWait;
+class UkagakaTaskEnd;
+class UkagakaTaskNewPhase;
+
+class UkagakaTask {
+
+public:
+
+	UkagakaTaskType TaskType = UkagakaTaskType::TextOutput;
+
+protected:
+	string strPar;
+	wstring wstrPar;
+	bool boolPar;
+	int intPar;
+
+//private:
+//
+//	//WARNING: DEPRECATED
+//	void* Parameters = nullptr;
+//
+//	wstring strParameter;
+//
+//	SPAnimation animationParameter;
+//
+//	int intParameter;
+
+public:
+	operator UkagakaTaskAnimation();
+
+	operator UkagakaTaskTextOutput();
+
+	operator UkagakaTaskWait();
+
+	operator UkagakaTaskEnd();
+
+	operator UkagakaTaskNewPhase();
+
+	//UkagakaTask(UkagakaTaskType type, void* parameter);
+
+	//~UkagakaTask() {
+	//	if (TaskType == 0) {
+	//		free(Parameters);
+	//	}
+	//	else {
+	//		delete Parameters;
+	//	}
+	//}
+
+	//wstring GetString();
+
+	//SPAnimation GetAnimation();
+
+	//int GetInteger();
+};
+
+class UkagakaTaskAnimation : public UkagakaTask{
+
+public:
+
+	UkagakaTaskAnimation(string id, UWAnimationState status, bool immediately = false){
+		this->TaskType = UkagakaTaskType::SwitchAnimation;
+		this->strPar = id;
+		this->intPar = status;
+	}
+
+	inline string GetAnimation() { return strPar; };
+	inline UWAnimationState GetState() { return (UWAnimationState)intPar; };
+	inline bool IsImmediate(){ return boolPar; };
+
+	operator UkagakaTask() {
+		return *this;
+	}
+};
+
+class UkagakaTaskTextOutput : public UkagakaTask{
+
+public:
+
+	UkagakaTaskTextOutput(wstring str) {
+		this->TaskType = UkagakaTaskType::TextOutput;
+		this->wstrPar = str;
+	}
+
+	inline wstring GetString() { return wstrPar; };
+
+	operator UkagakaTask() {
+		return *this;
+	}
+};
+
+class UkagakaTaskWait : public UkagakaTask {
+
+public:
+	UkagakaTaskWait(int ticks) {
+		this->TaskType = UkagakaTaskType::Wait;
+		this->intPar = ticks;
+	}
+
+	inline int GetTicks() { return intPar; };
+
+	operator UkagakaTask() {
+		return *this;
+	}
+};
+
+class UkagakaTaskEnd : public UkagakaTask{
+public:
+	UkagakaTaskEnd() {
+		this->TaskType = End;
+	}
+
+	operator UkagakaTask() {
+		return *this;
+	}
+};
+
+class UkagakaTaskNewPhase : public UkagakaTask {
+public:
+	UkagakaTaskNewPhase() {
+		this->TaskType = UkagakaTaskType::NewPhase;
+	}
+
+	operator UkagakaTask() {
+		return *this;
+	}
+};
+
 class UkagakaRenderer {
 	
 public:
@@ -378,6 +523,10 @@ public:
 
 	queue<AnimFrame> bitmapQueue = queue<AnimFrame>();
 
+	//queue<wstring> LiteratureBuffer = queue<wstring>();
+
+	queue<UkagakaTask> taskBuffer = queue<UkagakaTask>();
+
 	int currentBalloonTextIndex = 0;
 
 	wstring currentBalloonText = L"";
@@ -387,26 +536,57 @@ public:
 	UWAnimationState currentAnimState;
 
 private:
+
 	UWAnimationState nextAnimState;
 
 	array<int, 8> LastFrame;
+
 	bool changing;
 
-public:
-	UkagakaRenderer(SPD2DRenderer D2dRenderer) :
-		pDirect2DRenderer(D2dRenderer) {
+	int TextOutputWaitTick;
 
-	}
+	bool ShowBalloon;
+
+	bool currentStatusEnd;
+
+public:
+
+	UkagakaRenderer(SPD2DRenderer D2dRenderer) :
+		pDirect2DRenderer(D2dRenderer) { }
+
+	/*
+	* TB means that ToBuffer, these function will not Run In-Time,
+	* instead. they push it into the task buffer.
+	*/
+
+	HRESULT PlayAnimationTB(string id, UWAnimationState state, bool immediately = false);
+
+	//DEPRECATED
+	HRESULT PlayImmediateAnimationTB(string id, UWAnimationState state);
+
+	HRESULT NewPhaseTB();
+
+	HRESULT EndSectionTB();
+
+	HRESULT WaitTicksTB(int ticks);
+
+	HRESULT OutputTextTB(wstring text, UWTextStyle = UWTextStyle::paragraph, UWTextColor = UWTextColor::Black);
+
+	HRESULT ClearText();
+
+	HRESULT HideBalloon();
+
+	HRESULT MainLogicUpdate();
 
 	HRESULT PlayAnimation(string id, UWAnimationState state);
 
 	HRESULT PlayAnimationImmediately(string id, UWAnimationState state);
 
-	HRESULT PrintText(wstring text, UWTextStyle = UWTextStyle::paragraph, UWTextColor = UWTextColor::Black);
+private:
 
-	HRESULT ClearText();
+	HRESULT PushTask(UkagakaTask task);
 
-	HRESULT MainLogicUpdate();
+	HRESULT ClearBuffer();
 };
 
 typedef UkagakaRenderer* PUkagakaRenderer;

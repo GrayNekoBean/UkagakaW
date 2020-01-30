@@ -69,9 +69,14 @@ namespace UkagakaW
         public static void UkagakaInteract(string ukagakaID, int parameter)
         {
             Console.WriteLine(ukagakaID + " Interacted!");
-            ukagakaInstances[ukagakaID].renderer.PlayAnimImmediately("Test-Chan-0", Render.AnimationState.InfinityLoop);
+            Ukagaka ukagaka = ukagakaInstances[ukagakaID];
+            ukagaka.renderer.PlayAnimImmediately("Test-Chan-0", Render.AnimationState.InfinityLoop);
 
-            ukagakaInstances[ukagakaID].Say("helloWorld");
+            ukagaka.Say("Hello World, Does it get over to the second line? I mean this string, I guess so." +
+                "\n并且，在接下来我想测试一段中文输入。\nちょとまて、日本語はいいんですが？");
+            ukagaka.Wait(50);
+            //ukagaka.SayInNewPhase("");
+            ukagaka.SayInNewPhase("Oh, Oh, don't worry, it's just a test of new phase func.");
         }
     }
 }

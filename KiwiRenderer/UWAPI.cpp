@@ -96,8 +96,8 @@ void PlayUkagakaAnimation
 	float posX, float posY,
 	float sizeX, float sizeY, float opaque) {
 
-	SPUkagaka ukagaka = UkagakaInstances_ID[ukagakaID];
-	HRESULT hr = ukagaka->renderer->PlayAnimation(anim, (UWAnimationState)animState);
+	SPUkagaka ukagaka = GetUkagaka(ukagakaID);
+	HRESULT hr = ukagaka->renderer->PlayAnimationTB(anim, (UWAnimationState)animState, false);
 	return;
 }
 
@@ -106,22 +106,26 @@ void PlayUkagakaAnimationImmediately
 	float posX, float posY,
 	float sizeX, float sizeY, float opaque) {
 
-	SPUkagaka ukagaka = UkagakaInstances_ID[ukagakaID];
-	HRESULT hr = ukagaka->renderer->PlayAnimationImmediately(anim, (UWAnimationState)animState);
+	SPUkagaka ukagaka = GetUkagaka(ukagakaID);
+	HRESULT hr = ukagaka->renderer->PlayAnimationTB(anim, (UWAnimationState)animState, true);
 
 }
 
 void SpeakSentence(LPCSTR ukagakaID, BSTR words)
 {
-	SPUkagaka ukagaka = UkagakaInstances_ID[ukagakaID];
-	HRESULT hr = ukagaka->renderer->PrintText(wstring(words, SysStringLen(words)));
+	SPUkagaka ukagaka = GetUkagaka(ukagakaID);
+	HRESULT hr = ukagaka->renderer->OutputTextTB(wstring(words, SysStringLen(words)));
 }
 
-void NewPhase(LPCSTR ukagakaID, BSTR words)
+void StartNewPhase(LPCSTR ukagakaID, BSTR words)
 {
-	SPUkagaka ukagaka = UkagakaInstances_ID[ukagakaID];
-	HRESULT hr = ukagaka->renderer->ClearText();
-	hr = ukagaka->renderer->PrintText(wstring(words, SysStringLen(words)));
+	SPUkagaka ukagaka = GetUkagaka(ukagakaID);
+	HRESULT hr = ukagaka->renderer->NewPhaseTB();
+	hr = ukagaka->renderer->OutputTextTB(wstring(words, SysStringLen(words)));
 }
 
-
+void WaitForTick(LPCSTR ukagakaID, int ticks) 
+{
+	SPUkagaka ukagaka = GetUkagaka(ukagakaID);
+	ukagaka->renderer->WaitTicksTB(ticks);
+}
