@@ -2,14 +2,14 @@
 
 /*
 * ---------------------Statement---------------------
-* Copyright(c) 2018-2019 Bio-Electric Studio
+* Copyright(c) 2018-2020 Bio-Electric Studio
 * All Right Reserved
 * This C# source file is for the Application of Project Ukagaka_W.
 * You are not allowed to copy any code from here without permission.
 *
-* File: Animation
+* File: UkagakaW
 * Author: Biobean
-* Create On: 2019/12/5 20:49:44
+* Create On: 2020/2/9 16:25:54
 *
 * Overall Description:
 * None
@@ -23,20 +23,19 @@
 
 #endregion
 
-using UkagakaW.Render;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace UkagakaW.Core
 {
-    public class Animation
+    public class UkagakaW
     {
-
-        public string animationID;
-        public AnimationState defaultState;
-
-        public Animation(string animID, AnimationState deftState = AnimationState.InfinityLoop)
+        public static Ukagaka GetUkagaka(string UkagakaID)
         {
-            this.animationID = animID;
-            this.defaultState = deftState;
+            return UkagakaWMain.ukagakaInstances[UkagakaID].ukagaka;
         }
     }
 }

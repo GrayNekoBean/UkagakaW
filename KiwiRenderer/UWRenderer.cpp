@@ -106,28 +106,108 @@ HRESULT UWD2DRenderer::CreateDDR()
 
 		hr = mFactory->CreateDCRenderTarget(&rtp, &this->mDCRT);
 
-		UWBrushResources[UWTextColor::Black] = NULL;
+		UWDefinedBrushResources[UWTextColor::Black] = NULL;
 		D2D1_COLOR_F brushColor;
 		brushColor.a = 255;
 		brushColor.r = 0;
 		brushColor.g = 0;
 		brushColor.b = 0;
-		hr = mDCRT->CreateSolidColorBrush(brushColor, &UWBrushResources[UWTextColor::Black]);
 
+		hr = mDCRT->CreateSolidColorBrush(brushColor, &UWDefinedBrushResources[UWTextColor::Black]);
+		
 		IDWriteFontCollection *fontCollection;
 		mDwFactory->GetSystemFontCollection(&fontCollection, FALSE);
 
-		TextStyleResources[UWTextStyle::paragraph] = NULL;
-		CPDWriteTextFormat textFormat;
-		mDwFactory->CreateTextFormat(L"Consolas", fontCollection,
-									 DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_NORMAL,
-									 DWRITE_FONT_STRETCH::DWRITE_FONT_STRETCH_NORMAL, 10.0f, L"cn-zh", &TextStyleResources[UWTextStyle::paragraph]);
+		this->CreateFontStyle(L"Consolas", 10.0f, false, false);
+		this->CreateFontStyle(L"Consolas", 10.0f, true, false);
+		this->CreateFontStyle(L"Consolas", 10.0f, false, true);
+		this->CreateFontStyle(L"Consolas", 7.0f, false, false);
+		this->CreateFontStyle(L"Consolas", 12.5f, false, false);
+		this->CreateFontStyle(L"Consolas", 15.0f, false, false);
+
+		//TextStyleResources[UWTextStyle::paragraph] = NULL;
+		//mDwFactory->CreateTextFormat(L"Consolas", fontCollection,
+		//	DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_NORMAL,
+		//	DWRITE_FONT_STRETCH::DWRITE_FONT_STRETCH_NORMAL, 10.0f, L"cn-zh", &TextStyleResources[UWTextStyle::paragraph]);
+
+		//TextStyleResources[UWTextStyle::strong] = NULL;
+		//mDwFactory->CreateTextFormat(L"Consolas", fontCollection,
+		//	DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_BOLD, DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_NORMAL,
+		//	DWRITE_FONT_STRETCH::DWRITE_FONT_STRETCH_NORMAL, 10.0f, L"cn-zh", &TextStyleResources[UWTextStyle::strong]);
+
+		//TextStyleResources[UWTextStyle::italic] = NULL;
+		//mDwFactory->CreateTextFormat(L"Consolas", fontCollection,
+		//	DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_ITALIC,
+		//	DWRITE_FONT_STRETCH::DWRITE_FONT_STRETCH_NORMAL, 10.0f, L"cn-zh", &TextStyleResources[UWTextStyle::italic]);
+
+		//TextStyleResources[UWTextStyle::small] = NULL;
+		//mDwFactory->CreateTextFormat(L"Consolas", fontCollection,
+		//	DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_NORMAL,
+		//	DWRITE_FONT_STRETCH::DWRITE_FONT_STRETCH_NORMAL, 7.0f, L"cn-zh", &TextStyleResources[UWTextStyle::small]);
+
+		//TextStyleResources[UWTextStyle::big] = NULL;
+		//mDwFactory->CreateTextFormat(L"Consolas", fontCollection,
+		//	DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_NORMAL,
+		//	DWRITE_FONT_STRETCH::DWRITE_FONT_STRETCH_NORMAL, 12.5f, L"cn-zh", &TextStyleResources[UWTextStyle::big]);
+
+		//TextStyleResources[UWTextStyle::large] = NULL;
+		//mDwFactory->CreateTextFormat(L"Consolas", fontCollection,
+		//	DWRITE_FONT_WEIGHT::DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE::DWRITE_FONT_STYLE_NORMAL,
+		//	DWRITE_FONT_STRETCH::DWRITE_FONT_STRETCH_NORMAL, 15.0f, L"cn-zh", &TextStyleResources[UWTextStyle::large]);
+
+		for(UWTextFont font : UWDefinedFonts)
+		{
+			TextStyleResources.push_back(NULL);
+
+			mDwFactory->CreateTextFormat(font.font, fontCollection,
+				(!font.bold) ? DWRITE_FONT_WEIGHT_NORMAL : DWRITE_FONT_WEIGHT_BOLD,
+				(!font.italic) ? DWRITE_FONT_STYLE_NORMAL : DWRITE_FONT_STYLE_ITALIC,
+				DWRITE_FONT_STRETCH::DWRITE_FONT_STRETCH_NORMAL,
+				font.size, L"cn-zh", &TextStyleResources[TextStyleResources.size() - 1]);
+		}
 
 		this->LoadResources(L".\\Resources");
 	}
 
 	return hr;
 }
+
+int UWD2DRenderer::CreateFontStyle(LPCWSTR fontFamily, float size, bool bold, bool italic) {
+	UWTextFont font = UWTextFont();
+	font.font = fontFamily;
+	font.size = size;
+	font.bold = bold;
+	font.italic = italic;
+
+	this->UWDefinedFonts.push_back(font);
+
+	CComPtr<IDWriteFontCollection> fontCollection;
+	mDwFactory->GetSystemFontCollection(&fontCollection, FALSE);
+
+	TextStyleResources.push_back(NULL);
+
+	mDwFactory->CreateTextFormat(font.font, fontCollection,
+		(!font.bold) ? DWRITE_FONT_WEIGHT_NORMAL : DWRITE_FONT_WEIGHT_BOLD,
+		(!font.italic) ? DWRITE_FONT_STYLE_NORMAL : DWRITE_FONT_STYLE_ITALIC,
+		DWRITE_FONT_STRETCH::DWRITE_FONT_STRETCH_NORMAL,
+		font.size, L"cn-zh", &TextStyleResources[TextStyleResources.size() - 1]);
+
+	return UWDefinedFonts.size() - 1;
+}
+
+int UWD2DRenderer::CreateColorBrush(int r, int g, int b, int a) {
+
+	D2D1_COLOR_F brushColor = { r, g, b, a };
+	int colorCode = CalculateColorCode(r, g, b, a);
+
+	if (UWDefinedBrushResources.count(colorCode) == 0) {
+		UWDefinedBrushResources[colorCode];
+		 mDCRT->CreateSolidColorBrush(brushColor, &UWDefinedBrushResources[colorCode]);
+	}
+
+	return colorCode;
+}
+
 
 HRESULT UWD2DRenderer::DiscardDIR()
 {
@@ -624,12 +704,12 @@ HRESULT UWD2DRenderer::OnFrameRender(RenderTask task, POINT position, SIZE canva
 	timer.Start();
 	if (!task.IsEmpty())
 	{
-		task.Render(mDCRT, position, canvasSize);
+		task.Render(mDCRT, mDwFactory, position, canvasSize);
 		mLastBuffer = task;
 	}
 	else
 	{
-		mLastBuffer.Render(mDCRT, position, canvasSize);
+		mLastBuffer.Render(mDCRT, mDwFactory, position, canvasSize);
 	}
 
 	deltaTime = timer.GetMilliseconds();
@@ -671,18 +751,57 @@ BOOL UWD2DRenderer::IsBufferEmpty()
 	return mBuffer.empty();
 }
 
-HRESULT UWRenderElement_Bitmap::Render(CPDCRenderTarget &DCRT)
+HRESULT UWRenderElement_Bitmap::Render(CPDCRenderTarget &DCRT, CPDWriteFactory &DWFactory)
 {
 	DCRT->DrawBitmap(bitmap, rect, opaque);
 	return S_OK;
 }
 
-HRESULT UWRenderElement_Text::Render(CPDCRenderTarget &DCRT)
-{
+VOID UWRenderElement_Text::AppendText(wstring txt, UWTextFont style) {
+	text.append(txt);
 
-	DCRT->DrawText(text.c_str(), text.size(), textFormat, rect, textBrush,
-				   D2D1_DRAW_TEXT_OPTIONS::D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT,
-				   DWRITE_MEASURING_MODE::DWRITE_MEASURING_MODE_NATURAL);
+	DWRITE_TEXT_RANGE range = { text.size(), txt.size() };
+
+	formats.push_back({ range, style });
+}
+
+HRESULT UWRenderElement_Text::Render(CPDCRenderTarget &DCRT, CPDWriteFactory &DWFactory)
+{
+	int textLength = text.size();
+
+	CComPtr<IDWriteTextLayout> layout;
+	DWFactory->CreateTextLayout(text.c_str(), textLength, textFormat, rect.right - rect.left, rect.bottom - rect.top, &layout);
+
+	for (auto format : formats) {
+		int start = format.range.startPosition;
+		int end = start + format.range.length;
+		if (start <= textLength) {
+			DWRITE_TEXT_RANGE rng;
+			if (end > textLength) {
+				rng = { (UINT32)start, (UINT32)(textLength - start) };
+				layout->SetFontStyle(format.font.GetStyle(), rng);
+				layout->SetFontWeight(format.font.GetWeight(), rng);
+				layout->SetFontStretch(format.font.GetStretch(), rng);
+				layout->SetFontSize(format.font.size, rng);
+				layout->SetFontFamilyName(format.font.font, rng);
+			}
+			else {
+				rng = format.range;
+				layout->SetFontStyle(format.font.GetStyle(), rng);
+				layout->SetFontWeight(format.font.GetWeight(), rng);
+				layout->SetFontStretch(format.font.GetStretch(), rng);
+				layout->SetFontSize(format.font.size, rng);
+				layout->SetFontFamilyName(format.font.font, rng);
+			}
+		}
+	}
+
+	DCRT->DrawTextLayout({ rect.left, rect.top }, layout, textBrush, D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT);
+
+	//DCRT->DrawText(text.c_str(), text.size(), textFormat, rect, textBrush,
+	//			   D2D1_DRAW_TEXT_OPTIONS::D2D1_DRAW_TEXT_OPTIONS_ENABLE_COLOR_FONT,
+	//			   DWRITE_MEASURING_MODE::DWRITE_MEASURING_MODE_NATURAL);
+	
 
 	return S_OK;
 }
@@ -769,12 +888,14 @@ HRESULT UkagakaRenderer::PlayAnimationTB(string uid, UWAnimationState state, boo
 	return true;
 }
 
-HRESULT UkagakaRenderer::OutputTextTB(wstring text, UWTextStyle style, UWTextColor color)
+HRESULT UkagakaRenderer::OutputTextTB(wstring text, int style, int color)
 {
 	this->ShowBalloon = true;
 	//this->taskBuffer.push(text);
 
-	this->PushTask(UkagakaTaskTextOutput(text));
+	UkagakaTaskTextOutput task = UkagakaTaskTextOutput(text, this->pDirect2DRenderer->UWDefinedFonts[style], color);
+
+	this->PushTask(task);
 	return S_OK;
 }
 
@@ -807,6 +928,8 @@ HRESULT UkagakaRenderer::PushTask(UkagakaTask task){
 	if (this->currentStatusEnd)
 	{
 		if(t.TaskType != -1){
+			currentStatusEnd = false;
+
 			this->ClearText();
 			this->ClearBuffer();
 			this->HideBalloon();
@@ -835,7 +958,9 @@ UkagakaTask::operator UkagakaTaskAnimation()
 
 UkagakaTask::operator UkagakaTaskTextOutput()
 {
-	return UkagakaTaskTextOutput(wstrPar);
+	UkagakaTaskTextOutput task = UkagakaTaskTextOutput(wstrPar, fontPar, intPar);
+
+	return task;
 }
 
 UkagakaTask::operator UkagakaTaskWait() 
@@ -959,9 +1084,17 @@ HRESULT UkagakaRenderer::MainLogicUpdate()
 									break;
 								}
 								case 1:
+								{
 									//this->ClearText();
-									this->cacheBalloonText += ((UkagakaTaskTextOutput)task).GetString();
+									UkagakaTaskTextOutput t = (UkagakaTaskTextOutput)task;
+
+									this->textFormats.push_back({ {(UINT32)currentBalloonTextIndex, t.GetString().size()}, t.GetFont() });
+									this->textColorBrush = pDirect2DRenderer->UWDefinedBrushResources[t.GetColor()];
+
+									this->ShowBalloon = true;
+									this->cacheBalloonText += t.GetString();
 									break;
+								}
 								case 2:
 									this->TextOutputWaitTick += static_cast<UkagakaTaskWait>(task).GetTicks();
 									break;
@@ -995,7 +1128,9 @@ HRESULT UkagakaRenderer::MainLogicUpdate()
 						UWRenderElement_Text *textElement = new UWRenderElement_Text(
 							{175, 50}, {125, 250}, 1.0f,
 							currentBalloonText, pDirect2DRenderer->TextStyleResources[UWTextStyle::paragraph],
-							(CPBrush)pDirect2DRenderer->UWBrushResources[UWTextColor::Black]);
+							(CPBrush)this->textColorBrush);
+
+						textElement->formats = textFormats;
 
 						task.AddElement(textElement);
 					}
@@ -1028,9 +1163,17 @@ HRESULT UkagakaRenderer::MainLogicUpdate()
 						break;
 					}
 					case 1:
+					{
 						//this->ClearText();
-						this->cacheBalloonText += ((UkagakaTaskTextOutput)task).GetString();
+						UkagakaTaskTextOutput t = (UkagakaTaskTextOutput)task;
+
+						this->textFormats.push_back({ { (UINT32)currentBalloonTextIndex, t.GetString().size() }, t.GetFont() });
+						this->textColorBrush = pDirect2DRenderer->UWDefinedBrushResources[t.GetColor()];
+
+						this->ShowBalloon = true;
+						this->cacheBalloonText += t.GetString();
 						break;
+					}
 					case 2:
 						this->TextOutputWaitTick += static_cast<UkagakaTaskWait>(task).GetTicks();
 						break;

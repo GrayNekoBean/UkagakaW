@@ -66,13 +66,16 @@ BOOL APIENTRY DllMain(HMODULE hInstance,
 }
 
 void InitializeMainRenderThread() {
-	
+
 	StartCSharpDLLProgress();
 
 	RegisterMouseEvent(OnWndLeftDown, MSE_LEFT_DOWN);
 	RegisterMouseEvent(OnWndLeftDrag, MSE_LEFT_DRAG_IN_GLOBAL);
 	RegisterMouseEvent(OnWndRightDown, MSE_RIGHT_DOWN);
 	RegisterMouseEvent(OnWndLeftClick, MSE_LEFT_CLICK);
+	RegisterMouseEvent(OnLeftDoubleClick, MSE_LEFT_DOUBLE_CLICK);
+
+	MT_PostInitialize("TEST");
 
 	if (UkagakaInstances_ID["TEST"]->renderer != NULL) {
 		UkagakaInstances_ID["TEST"]->renderer->PlayAnimation("Anim1", UWAnimationState::InfinityLoop);
@@ -105,6 +108,7 @@ void CSHARP_SIMULATE_Main() {
 }
 
 void InitializeLogicThread() {
+
 	while (!_END_PROGRAM_) {
 		if (LOAD_FINISH) {
 			//clock_t start, end;
@@ -163,31 +167,10 @@ void CSHARP_SIMULATE_LoadUkagakaFilesAndResources() {
 	FetchData("FinishLoadResources:TEST", (VOID*)&L"NONE:NONE");
 }
 
-void OnWndLeftDown(POINT pos, HWND hWnd) {
-	SPUkagaka ukw = UkagakaInstances_HWND[hWnd];
-	if (ukw != NULL) {
-		ukw->renderer->pDirect2DRenderer->OnLeftDown(pos);
-	}
-}
-
 void OnWndLeftDrag(POINT pos, HWND hWnd) {
 	SPUkagaka ukw = UkagakaInstances_HWND[hWnd];
 	if (ukw != NULL) {
 		ukw->renderer->pDirect2DRenderer->OnLeftDrag_Global(pos);
-	}
-}
-
-void OnWndRightDown(POINT pos, HWND hWnd) {
-	int iii = 0;
-	UkagakaInstances_HWND[hWnd]->renderer->PlayAnimationImmediately("inm", UWAnimationState::InfinityLoop);
-}
-
-void OnWndLeftClick(POINT pos, HWND hWnd) {
-	if (MT_OnUkagakaInteract == NULL) {
-		Log(L"?????????");
-	}else{
-		Log(L"???");
-		MT_OnUkagakaInteract(UkagakaInstances_HWND[hWnd]->id.c_str(), 0);
 	}
 }
 
@@ -245,6 +228,43 @@ void FinishLoading(LPCSTR Id) {
 
 	CreateUkagakaInstance(UkagakaInstances_ID.at(Id)->name.c_str(), Id);
 }
+
+
+void OnWndRightDown(POINT pos, HWND hWnd) {
+	int iii = 0;
+	UkagakaInstances_HWND[hWnd]->renderer->PlayAnimationImmediately("inm", UWAnimationState::InfinityLoop);
+}
+
+void OnWndLeftClick(POINT pos, HWND hWnd) {
+	if (MT_OnUkagakaInteract == NULL) {
+		Log(L"?????????");
+	}
+	else {
+		Log(L"???");
+
+		SPUkagaka ukagaka = GET_UKAGAKA_BY_HWDN(hWnd);
+
+		int rectId = ukagaka->interaction.GetRectByPoint(pos);
+		if (rectId != -1) {
+			RECT rect = ukagaka->interaction.rectangles[rectId];
+			Log(L"yo");
+		}
+
+		MT_OnUkagakaInteract(ukagaka->id.c_str(), 0);
+	}
+}
+
+void OnWndDoubleLeftClick(POINT pos, HWND hWnd) {
+
+}
+
+void OnWndLeftDown(POINT pos, HWND hWnd) {
+	SPUkagaka ukw = UkagakaInstances_HWND[hWnd];
+	if (ukw != NULL) {
+		ukw->renderer->pDirect2DRenderer->OnLeftDown(pos);
+	}
+}
+
 
 HWND CreateUkagakaInstance(LPCWSTR name, LPCSTR id) {
 	USES_CONVERSION;

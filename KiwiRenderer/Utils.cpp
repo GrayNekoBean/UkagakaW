@@ -27,6 +27,18 @@
 #include "stdafx.h"
 #include "Utils.h"
 
+int CalculateColorCode(int r, int g, int b, int a) {
+	if (r < 256 && g < 256 && b < 256 && a < 256) {
+		int code = r * (0x10)*(0x10)*(0x10)
+			+ g * (0x10)*(0x10)
+			+ b * (0x10)
+			+ a;
+		return code;
+	}
+
+	return -1;
+}
+
 vector<LPCSTR> Split(LPCSTR str, LPCSTR spliter) {
 	if (str != ""&&spliter != "") {
 		vector<LPCSTR> results = vector<LPCSTR>();

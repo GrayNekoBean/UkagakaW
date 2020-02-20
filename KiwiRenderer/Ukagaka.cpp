@@ -44,6 +44,7 @@ void Ukagaka::Initiate(HWND hwnd) {
 	this->handle = hwnd;
 	this->renderer = SPUkagakaRenderer(new UkagakaRenderer(
 		SPD2DRenderer(new D2DRenderer(hwnd))));
+	this->interaction = UWInteraction();
 	this->renderer->pDirect2DRenderer->UkagakaID = this->id;
 }
 
@@ -53,4 +54,18 @@ void Ukagaka::SetConfig(string key, string value)
 
 void Ukagaka::SetProperty(wstring prpty, wstring value)
 {
+}
+
+extern LPCSTR LastUkagakaTag;
+extern SPUkagaka LastUkagakaPtr;
+
+extern map<string, SPUkagaka> UkagakaInstances_ID;
+
+SPUkagaka GetUkagakaByTag(LPCSTR id) {
+	if (id == LastUkagakaTag) {
+		return LastUkagakaPtr;
+	}
+	else {
+		return UkagakaInstances_ID[string(id)];
+	}
 }

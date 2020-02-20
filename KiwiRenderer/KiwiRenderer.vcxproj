@@ -25,6 +25,7 @@
     <ClInclude Include="Utils.h" />
     <ClInclude Include="UWAPI.h" />
     <ClInclude Include="UWEvents.h" />
+    <ClInclude Include="UWInteraction.h" />
     <ClInclude Include="UWRenderer.h" />
     <ClInclude Include="UWMain.h" />
     <ClInclude Include="UWResourceManager.h" />
@@ -35,6 +36,7 @@
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="UWAPI.cpp" />
     <ClCompile Include="UWEvents.cpp" />
+    <ClCompile Include="UWInteraction.cpp" />
     <ClCompile Include="UWMain.cpp" />
     <ClCompile Include="UWRenderer.cpp" />
     <ClCompile Include="UWResourceManager.cpp" />

@@ -94,6 +94,12 @@ typedef D2D1_POINT_2F PointF;
 typedef D2D1_POINT_2L PointL;
 typedef D2D1_POINT_2U PointU;
 
+typedef void(*GeneralEvent)(LPCSTR);// Par1: Ukagaka ID
+
+typedef void(*RenderEvent)(LPCSTR); // Par1: Ukagaka ID
+
+typedef void(*InteractEvent)(LPCSTR, int); // Par1: Ukagaka ID, Par2: Element/Ukagaka body part ID
+
 typedef array<int, 8> AnimFrame;
 
 //Max time for an Animation is 40 seconds

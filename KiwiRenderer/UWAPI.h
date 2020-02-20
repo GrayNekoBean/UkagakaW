@@ -25,6 +25,12 @@
 
 #include "Ukagaka.h"
 
+#define EXPORT_PASS_RENDER_EVENT_API(name) extern "C" _declspec(dllexport) void name(RenderEvent _event);
+#define EXPORT_PASS_GENERAL_EVENT_API(name) extern "C" _declspec(dllexport) void name(GeneralEvent _event);
+#define EXPORT_UKAGAKA_FUNCTION_API(name, ... ) extern "C" _declspec(dllexport) void name(LPCSTR ukagakaID, __VA_ARGS__);
+
+EXPORT_PASS_GENERAL_EVENT_API(PassPostInitializeEvent)
+
 extern "C" _declspec(dllexport) void PassGeneralRenderEvent(RenderEvent _event);
 
 extern "C" _declspec(dllexport) void PassAnimPlayFinishEvent(RenderEvent _event);
@@ -49,34 +55,36 @@ extern "C" _declspec(dllexport) void PlayUkagakaAnimationImmediately
 	float posX = 0, float posY = 0,
 	float sizeX = 0, float sizeY = 0, float opaque = 1.0f);
 
-extern "C" _declspec(dllexport) void SpeakSentence(
-	LPCSTR ukagakaID, BSTR words
+extern "C" _declspec(dllexport) void OutputText(
+	LPCSTR ukagakaID, BSTR words, int style = (int)UWTextStyle::paragraph, int colorCode = (int)UWTextColor::Black
 );
 
-extern "C" _declspec(dllexport) void ContinueSpeak(
-	LPCSTR ukagakaID, LPCWSTR words
-);
-
-extern "C" _declspec(dllexport) void StartNewPhase(
-	LPCSTR ukagakaID, BSTR words
-);
-
-extern "C" _declspec(dllexport) void PauseSpeak(
-	LPCSTR ukagakaID, int milliseconds
-);
-
-extern "C" _declspec(dllexport) void EndSpeak(
+extern "C" _declspec(dllexport) void SetNewPhase(
 	LPCSTR ukagakaID
 );
 
-extern "C" _declspec(dllexport) void InterruptWithNewPhase(
-	LPCSTR ukagakaID, LPCWSTR words
+extern "C" _declspec(dllexport) void WaitForTicks(
+	LPCSTR ukagakaId, int ticks
+);
+
+extern "C" _declspec(dllexport) void TextOutputPause(
+	LPCSTR ukagakaID, int milliseconds
+);
+
+extern "C" _declspec(dllexport) void EndSection(
+	LPCSTR ukagakaID
 );
 
 extern "C" _declspec(dllexport) void HideBalloon(
 	LPCSTR ukagakaID
 );
 
-extern "C" _declspec(dllexport) void WaitForTick(
-	LPCSTR ukagakaId, int ticks
+extern "C" _declspec(dllexport) int CreateUserDefinedFont(
+	LPCSTR ukagakaID, BSTR font, 
+	float size, bool bold, bool italic
+);
+
+extern "C" _declspec(dllexport) int CreateUserDefinedColor(
+	LPCSTR ukagakaID,
+	int r, int g, int b, int a
 );

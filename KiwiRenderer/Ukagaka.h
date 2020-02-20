@@ -23,7 +23,7 @@
 
 #pragma once
 
-#include "UWRenderer.h"
+#include "UWInteraction.h"
 
 typedef class Ukagaka {
 
@@ -36,6 +36,7 @@ public:
 	UUID UID;
 
 	SPUkagakaRenderer renderer;
+	UWInteraction interaction;
 
 	UINT 
 		height,
@@ -64,3 +65,5 @@ UkagakaInstance,
 ;
 typedef unique_ptr<Ukagaka> UPUkagaka;
 typedef shared_ptr<Ukagaka> SPUkagaka;
+
+SPUkagaka GetUkagakaByTag(LPCSTR ID);

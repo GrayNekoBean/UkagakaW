@@ -38,26 +38,68 @@ using IronPython.Hosting;
 
 namespace UkagakaW.Shiori
 {
-    class ScriptRuntime
+
+    public class ScriptRuntime
     {
 
-        ScriptEngine engine;
-        ScriptScope scope;
+        protected ScriptEngine engine;
+        protected ScriptScope scope;
 
-        ScriptSource source;
-        CompiledCode compiled;
+        protected ScriptSource source;
+        protected CompiledCode compiled;
 
-        public void Initialize()
+        public ScriptRuntime(string path)
         {
             this.engine = Python.CreateEngine();
             this.scope = engine.CreateScope();
 
-            source = engine.CreateScriptSourceFromFile("Ukagaka\\Test-Chan\\ghost\\_COMPILED\\_COMPILED.py", Encoding.UTF8, SourceCodeKind.File);
+            source = engine.CreateScriptSourceFromFile(path, Encoding.UTF8, SourceCodeKind.File);
             compiled = source.Compile();
 
-            compiled.Execute(scope);
-
             scope.SetVariable("ASSEMBLY_UkagakaW", Assembly.GetExecutingAssembly());
+        }
+
+        public void Execute()
+        {
+            compiled.Execute(scope);
+        }
+
+        public dynamic CallFunction(dynamic func, params object[] parameters)
+        {
+            return engine.Operations.Invoke(func, parameters);
+        }
+
+        public dynamic CallFunctionByName(string funcName, params object[] parameters)
+        {
+            if (parameters == null || parameters.Length == 0)
+            {
+                return engine.Operations.Invoke(scope.GetVariable(funcName));
+            }
+            else
+            {
+                return engine.Operations.Invoke(scope.GetVariable(funcName), parameters);
+            }
+        }
+
+        public dynamic CallMemberFunctionByName(object obj, string memberFunc, params object[] parameters)
+        {
+            return engine.Operations.InvokeMember(obj, memberFunc, parameters);
+        }
+    }
+
+    public class UkagakaScriptRuntime : ScriptRuntime
+    {
+
+        Dictionary<UkagakaEvent, dynamic> EventTable = new Dictionary<UkagakaEvent, dynamic>();
+
+        public UkagakaScriptRuntime(string path) : base(path)
+        {
+            EventTable = new Dictionary<UkagakaEvent, dynamic>();
+        }
+
+        public void Initialize()
+        {
+            compiled.Execute(scope);
         }
 
         public void UpdateScriptRuntime()
@@ -76,10 +118,26 @@ namespace UkagakaW.Shiori
             //scope.SetVariable(animationVar, new Animation)
         }
 
-        public object CallFunction(string func, params object[] pars)
+        public void RegisterGlobalEvent(GlobalEvent eventID, dynamic EventFunc)
         {
-            return null;
+
         }
 
+        public void RegisterUkagakaEvent(UkagakaEvent type,  dynamic EventFunc)
+        {
+            if (!EventTable.ContainsKey(type))
+            {
+                EventTable.Add(type, EventFunc);
+            }
+            else
+            {
+                EventTable[type] = EventFunc;
+            }
+        }
+
+        public void RunUkagakaEvent(UkagakaEvent event_, params dynamic[] pars)
+        {
+            CallFunction(EventTable[event_], pars);
+        }
     }
 }

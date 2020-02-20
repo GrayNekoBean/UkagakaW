@@ -21,45 +21,15 @@
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="UWMain.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Ukagaka.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="UWResourceManager.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="UWRenderer.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="UWEvents.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="UWMain.cpp">
+    <ClCompile Include="DllTest.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Ukagaka.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Utils.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="UWResourceManager.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="UWRenderer.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="UWEvents.cpp">
+    <ClCompile Include="dllmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

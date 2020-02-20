@@ -42,8 +42,13 @@ UINT FixedDeltaTime;
 
 UINT animationFrameRate = FrameRate::_40MS;
 
+LPCSTR LastUkagakaTag;
+SPUkagaka LastUkagakaPtr;
+
 //RT: Render Thread(fixed frame)
 //MT: Main Logic Thread(dynamic loop)
+
+RenderEvent MT_PostInitialize;
 
 RenderEvent MT_OnGeneralRender = NULL;
 RenderEvent MT_OnAnimFinishPlay = NULL;
@@ -85,13 +90,7 @@ extern "C" __declspec(dllexport) void InitializeMainRenderThread();
 
 extern "C" __declspec(dllexport) void InitializeLogicThread();
 
-void OnWndLeftDown(POINT pos, HWND hWnd);
-
 void OnWndLeftDrag(POINT pos, HWND hWnd);
-
-void OnWndRightDown(POINT pos, HWND hWnd);
-
-void OnWndLeftClick(POINT pos, HWND hWnd);
 
 void SetUkagakaLoading(LPCSTR ID, LPCWSTR Name);
 

@@ -28,6 +28,8 @@
 
 #include "UWAPI.h"
 
+extern GeneralEvent MT_PostInitialize;
+
 extern InteractEvent MT_OnUkagakaInteract;
 
 extern RenderEvent MT_OnGeneralRender;
@@ -39,6 +41,10 @@ extern InteractEvent MT_OnElementClick;
 
 extern map<string, SPUkagaka> UkagakaInstances_ID;
 extern map<HWND, SPUkagaka> UkagakaInstances_HWND;
+
+void PassPostInitializeEvent(GeneralEvent _event) {
+	MT_PostInitialize = _event;
+}
 
 void PassGeneralRenderEvent(RenderEvent _event) {
 	if (MT_OnGeneralRender == nullptr && _event != nullptr) {
@@ -96,7 +102,7 @@ void PlayUkagakaAnimation
 	float posX, float posY,
 	float sizeX, float sizeY, float opaque) {
 
-	SPUkagaka ukagaka = GetUkagaka(ukagakaID);
+	SPUkagaka ukagaka = GET_UKAGAKA(ukagakaID);
 	HRESULT hr = ukagaka->renderer->PlayAnimationTB(anim, (UWAnimationState)animState, false);
 	return;
 }
@@ -106,26 +112,51 @@ void PlayUkagakaAnimationImmediately
 	float posX, float posY,
 	float sizeX, float sizeY, float opaque) {
 
-	SPUkagaka ukagaka = GetUkagaka(ukagakaID);
+	SPUkagaka ukagaka = GET_UKAGAKA(ukagakaID);
 	HRESULT hr = ukagaka->renderer->PlayAnimationTB(anim, (UWAnimationState)animState, true);
 
 }
 
-void SpeakSentence(LPCSTR ukagakaID, BSTR words)
+void OutputText(LPCSTR ukagakaID, BSTR words, int style, int colorCode)
 {
-	SPUkagaka ukagaka = GetUkagaka(ukagakaID);
-	HRESULT hr = ukagaka->renderer->OutputTextTB(wstring(words, SysStringLen(words)));
+	SPUkagaka ukagaka = GET_UKAGAKA(ukagakaID);
+	HRESULT hr = ukagaka->renderer->OutputTextTB(wstring(words, SysStringLen(words)), style, colorCode);
 }
 
-void StartNewPhase(LPCSTR ukagakaID, BSTR words)
+void SetNewPhase(LPCSTR ukagakaID)
 {
-	SPUkagaka ukagaka = GetUkagaka(ukagakaID);
+	SPUkagaka ukagaka = GET_UKAGAKA(ukagakaID);
 	HRESULT hr = ukagaka->renderer->NewPhaseTB();
-	hr = ukagaka->renderer->OutputTextTB(wstring(words, SysStringLen(words)));
 }
 
-void WaitForTick(LPCSTR ukagakaID, int ticks) 
+void WaitForTicks(LPCSTR ukagakaID, int ticks) 
 {
-	SPUkagaka ukagaka = GetUkagaka(ukagakaID);
+	SPUkagaka ukagaka = GET_UKAGAKA(ukagakaID);
 	ukagaka->renderer->WaitTicksTB(ticks);
+}
+
+void EndSection(LPCSTR ukagakaID) {
+	SPUkagaka ukagaka = GET_UKAGAKA(ukagakaID);
+	ukagaka->renderer->EndSectionTB();
+}
+
+void HideBalloon(LPCSTR ukagakaID) {
+	SPUkagaka ukagaka = GET_UKAGAKA(ukagakaID);
+	ukagaka->renderer->HideBalloon();
+}
+
+int CreateUserDefinedFont(
+	LPCSTR ukagakaID,
+	BSTR font, float size, bool bold, bool italic
+) {
+	SPUkagaka ukagaka = GET_UKAGAKA(ukagakaID);
+	return ukagaka->renderer->pDirect2DRenderer->CreateFontStyle((LPCWSTR)font, size, bold, italic);
+}
+
+int CreateUserDefinedColor(
+	LPCSTR ukagakaID,
+	int r, int g, int b, int a
+) {
+	SPUkagaka ukagaka = GET_UKAGAKA(ukagakaID);
+	return ukagaka->renderer->pDirect2DRenderer->CreateColorBrush(r, g, b, a);
 }

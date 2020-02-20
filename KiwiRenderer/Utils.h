@@ -70,6 +70,8 @@ public:
 	void Restart();
 };
 
+int CalculateColorCode(int r, int g, int b, int a);
+
 vector<LPCSTR> Split(LPCSTR str, LPCSTR spliter);
 
 vector<LPCWSTR> Split(LPCWSTR str, LPCWSTR spliter);
