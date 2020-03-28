@@ -1,0 +1,6 @@
+AnimSource = "./Animation/Anim_Description/"
+AnimFormat = "json"
+
+Define Animation "Smile_1" as "smile1"
+Define Animation "Smile_2" as "smile2"
+Define Animation "Wave_Hand" as "waveHand"

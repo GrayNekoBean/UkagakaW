@@ -88,3 +88,9 @@ extern "C" _declspec(dllexport) int CreateUserDefinedColor(
 	LPCSTR ukagakaID,
 	int r, int g, int b, int a
 );
+
+extern "C" _declspec(dllexport) void DebugLog(BSTR info);
+
+extern "C" _declspec(dllexport) void DebugWarning(BSTR info);
+
+extern "C" _declspec(dllexport) void DebugError(BSTR info);

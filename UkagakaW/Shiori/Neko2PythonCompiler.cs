@@ -33,7 +33,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-using UkagakaW.Core;
+using UkagakaW.Util;
 
 namespace UkagakaW.Shiori
 {
@@ -62,6 +62,9 @@ namespace UkagakaW.Shiori
 
         public static string GetParameterListString(string[] pars)
         {
+            if (pars.Length == 0)
+                return null;
+
             StringBuilder builder = new StringBuilder();
 
             foreach (string p in pars)
@@ -90,19 +93,24 @@ namespace UkagakaW.Shiori
         key_event,  //event
         key_action,  //action
         key_of,  //of
-        key_function,  //function
+
+        /* ---Unfinished function--- */
+        key_select,  //select
+        key_random,  //random
+        /* ---------------------------- */
 
         symbol_at,  // @
         symbol_colon,  // :
         symbol_end,  // |
         symbol_bar,  // -
         symbol_dollar,  //$
+        symbol_transSymbol,  // \
 
         symbol_angle_left,  // <
         symbol_angle_right,  // >
-        symbol_bracket_left,
-        symbol_bracket_right,
-        symbol_quote_double,  //"
+        symbol_bracket_left,  // (
+        symbol_bracket_right,  // )
+        symbol_quote_double,  // "
         symbol_quote,  // '
         symbol_comma,  //,
         symbol_dot,  //.
@@ -194,15 +202,44 @@ namespace UkagakaW.Shiori
             }
         }
 
-        public static NekoCompiler Current;
+        public static NekoCompiler Current { get; private set; }
+
+        #region basic compiler info
+
+        public enum UkagakaPlatform
+        {
+            UkagakaW = 0,
+            SSP_YAYA = 1,
+            SSP_MISAKA = 2
+        }
+
+        public enum ScriptingMode
+        {
+            Python, NekoScript, Mix
+        }
+
+        public string NekoScript_Version { get; private set; }
+        public string IronPython_Version { get; private set; }
+
+        public string ScriptEncoding { get; private set; }
+
+        public UkagakaPlatform Platform { get; private set; }
+        public bool SSPCompatible { get; private set; }
+
+        public bool PragmaStrict { get; private set; }
+
+        public ScriptingMode mode { get; private set; }
+
+        public bool CleanCompile { get; set; }
+
+        #endregion
 
         private ScriptRuntime tempRuntime;
 
         private StringBuilder compiledPythonScript;
 
-        private string sourcePath;
-
-        private TextWriter scriptWriter;
+        //private TextWriter scriptWriter;
+        //private TextReader scriptReader;
 
         private Dictionary<string, ActionFunc> globalActions;
 
@@ -220,15 +257,37 @@ namespace UkagakaW.Shiori
 
         private TokenDefinition[] NekoExpressionDefinitions;
 
+        private TokenDefinition[] precompileDefinitions;
+
         private List<string> preCompiles;
 
         private List<string> tailLines;
 
-        Lexer lexer;
+        //private Lexer lexer;
 
-        public NekoCompiler(string directoryPath)
+        private readonly string GhostDirectory;
+
+        private readonly string COMBINED_PATH;
+        private readonly string COMPILED_PATH;
+        private readonly string PRECOMPILE_PATH;
+
+        private readonly string SCRIPT_DIRECTORY;
+        private readonly string TEMP_DIRECTORT;
+        private readonly string COMPILED_DIRECTORY;
+
+        public NekoCompiler(string directoryPath, bool reCompile = false)
         {
-            this.sourcePath = directoryPath;
+            this.GhostDirectory = Path.Combine(directoryPath, "ghost");
+
+            SCRIPT_DIRECTORY = Path.Combine(GhostDirectory, "NekoScript_Test");  // this should change to "NekoScript" directory, but currently for test
+            TEMP_DIRECTORT = Path.Combine(GhostDirectory, "TEMP");
+            COMPILED_DIRECTORY = Path.Combine(GhostDirectory, "COMPILED");
+
+            this.COMBINED_PATH = Path.Combine(TEMP_DIRECTORT, "_COMBINED.neko");
+            this.PRECOMPILE_PATH = Path.Combine(TEMP_DIRECTORT, "_PRECOMPILE.py");
+            this.COMPILED_PATH = Path.Combine(COMPILED_DIRECTORY, "_COMPILED.py");
+
+            this.CleanCompile = reCompile;
 
             this.compiledPythonScript = new StringBuilder();
 
@@ -252,54 +311,50 @@ namespace UkagakaW.Shiori
 
             TokenDefinitionCollection nekoExpDefs = new TokenDefinitionCollection();
 
+            TokenDefinitionCollection preDefs = new TokenDefinitionCollection();
+
+            preDefs.AddRegexTokenDef("(\'.*\')", TokenType.str);
+            preDefs.AddRegexTokenDef("(\".*\")", TokenType.str);
+
+            preDefs.AddKeywordTokenDef("define", TokenType.key_define);
+            preDefs.AddKeywordTokenDef("ukagaka", TokenType.key_ukagaka);
+            preDefs.AddKeywordTokenDef("anim", TokenType.key_anim);
+            preDefs.AddKeywordTokenDef("action", TokenType.key_action);
+            preDefs.AddKeywordTokenDef("event", TokenType.key_event);
+            preDefs.AddKeywordTokenDef("of", TokenType.key_of);
+
+            preDefs.AddSymbolTokenDef(',', TokenType.symbol_comma);
+            preDefs.AddSymbolTokenDef('(', TokenType.symbol_bracket_left);
+            preDefs.AddSymbolTokenDef(')', TokenType.symbol_bracket_right);
+
+            preDefs.AddTokenDef(new RegexMatcher(new Regex("^(\\s*)$")), TokenType.Empty);
+
+            preDefs.AddTokenDef(new GeneralFieldMatcher(), TokenType.field);
+
+            preDefs.AddRegexTokenDef(".*", TokenType.Unrecognize);
+
             scriptDefs.AddRegexTokenDef("(\'.*\')", TokenType.str);
             scriptDefs.AddRegexTokenDef("(\".*\")", TokenType.str);
 
-            scriptDefs.AddSymbolTokenDef('#', TokenType.PythonLine);
+            scriptDefs.AddKeywordTokenDef("select", TokenType.key_select);
+            scriptDefs.AddKeywordTokenDef("random", TokenType.key_random);
 
-            scriptDefs.AddKeywordTokenDef("from", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("import", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("def", TokenType.PythonLine);
-            scriptDefs.AddRegexTokenDef("\\$(.+)\b=\b.+", TokenType.PythonLine_Variable);
-            scriptDefs.AddRegexTokenDef(@".+\(.*\)", TokenType.PythonLine);
-            scriptDefs.AddSymbolTokenDef('=', TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("print", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("if", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("else", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("elif", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("for", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("del", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("try", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("except", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("finally", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("while", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("return", TokenType.PythonLine);
-            scriptDefs.AddKeywordTokenDef("class", TokenType.PythonLine);
-
-            scriptDefs.AddKeywordTokenDef("define", TokenType.key_define);
-            scriptDefs.AddKeywordTokenDef("ukagaka", TokenType.key_ukagaka);
-            scriptDefs.AddKeywordTokenDef("anim", TokenType.key_anim);
-            scriptDefs.AddKeywordTokenDef("action", TokenType.key_action);
             scriptDefs.AddKeywordTokenDef("event", TokenType.key_event);
-            scriptDefs.AddKeywordTokenDef("of", TokenType.key_of);
-
-            scriptDefs.AddKeywordTokenDef("function", TokenType.key_function);
 
             scriptDefs.AddSymbolTokenDef(':', TokenType.symbol_colon);
-
             scriptDefs.AddSymbolTokenDef(',', TokenType.symbol_comma);
             scriptDefs.AddSymbolTokenDef('(', TokenType.symbol_bracket_left);
             scriptDefs.AddSymbolTokenDef(')', TokenType.symbol_bracket_right);
+            scriptDefs.AddSymbolTokenDef('-', TokenType.symbol_bar);
 
             scriptDefs.AddTokenDef(new GeneralFieldMatcher(), TokenType.field);
-
-            scriptDefs.AddRegexTokenDef(".*", TokenType.Unrecognize);
+            scriptDefs.AddRegexTokenDef(".*", TokenType.PythonLine);
 
             nekoExpDefs.AddSymbolTokenDef('|', TokenType.symbol_end);
 
             nekoExpDefs.AddTokenDef(new RegexMatcher(new Regex("^(\\s*)$")), TokenType.Empty);
             nekoExpDefs.AddTokenDef(new GeneralFieldMatcher(true), TokenType.field);
-            nekoExpDefs.AddTokenDef(new TextMatcher(new char[] { '@', '$', '<', '>', '|', '"'}), TokenType.text);
+            nekoExpDefs.AddTokenDef(new TextMatcher(new char[] { '@', '$', '<', '>', '|', '"', '(', ')'}), TokenType.text);
             nekoExpDefs.AddSymbolTokenDef('@', TokenType.symbol_at);
             nekoExpDefs.AddSymbolTokenDef('$', TokenType.symbol_dollar);
             nekoExpDefs.AddSymbolTokenDef(',', TokenType.symbol_comma);
@@ -315,82 +370,143 @@ namespace UkagakaW.Shiori
 
             this.ScriptDefinitions = scriptDefs.ToArray();
             this.NekoExpressionDefinitions = nekoExpDefs.ToArray();
+            this.precompileDefinitions = preDefs.ToArray();
         }
 
         public void Compile()
         {
+            Debug.Log("Compiling Neko Script to Python Script...");
 
-            this.AddTokenDefinitions();
+            Debug.Log("Combining neko scripts...");
 
-            Combine();
+            if (!Directory.Exists(TEMP_DIRECTORT))
+            {
+                Directory.CreateDirectory(TEMP_DIRECTORT);
+            }
 
-            //File.CreateText("Ukagaka\\Test-Chan\\ghost\\COMPILED\\_COMPILED.py");
-            FileStream stream = File.Open("Ukagaka\\Test-Chan\\ghost\\COMPILED\\_PRECOMPILE.py", FileMode.OpenOrCreate);
+            if (CleanCompile)
+            {
+                File.Delete(COMBINED_PATH);
+            }
+
+            TextReader scriptReader = null;
+            FileStream stream = File.Open(COMBINED_PATH, FileMode.OpenOrCreate);
+            TextWriter scriptWriter = new StreamWriter(stream);
+
+            Combine(scriptReader,  scriptWriter);
+
+            scriptReader = new StreamReader(COMBINED_PATH);
+            stream = File.Open(PRECOMPILE_PATH, FileMode.OpenOrCreate);
             scriptWriter = new StreamWriter(stream);
 
-            TextReader reader = new StreamReader("Ukagaka\\Test-Chan\\ghost\\TEMP\\_COMBINED.neko");
+            Debug.Log("Scripts combined, Pre-Compile Phase 1 start...");
+            this.AddTokenDefinitions();
 
-            lexer = new Lexer(reader, ScriptDefinitions);
-
-            PreCompile();
-
-            reader.Close();
-
-            WritePreCompiles();
-
+            Lexer lexer = new Lexer(scriptReader, precompileDefinitions);
+            PreCompile(lexer);
+            scriptReader.Close();
+            WritePreCompiles(scriptWriter);
             scriptWriter.Close();
 
-            //Just for test
-            //WriteTails();
-
-            tempRuntime = new ScriptRuntime("Ukagaka\\Test-Chan\\ghost\\COMPILED\\_PRECOMPILE.py");
+            Debug.Log("_PRECOMPILE.py generated, Pre-Compile Phase 2 start...");
+            tempRuntime = new ScriptRuntime(PRECOMPILE_PATH);
             tempRuntime.Execute();
             tempRuntime.CallFunctionByName("PRE_COMPILE");
 
-            File.Delete("Ukagaka\\Test-Chan\\ghost\\COMPILED\\_PRECOMPILE.py");
+            Debug.Log("Pre-Compile finished, Post Compile started...");
 
-            File.Delete("Ukagaka\\Test-Chan\\ghost\\COMPILED\\_COMPILED.py");
-            stream = File.Open("Ukagaka\\Test-Chan\\ghost\\COMPILED\\_COMPILED.py", FileMode.OpenOrCreate);
+            if (CleanCompile)
+            {
+                File.Delete(COMPILED_PATH);
+            }
+
+            stream = File.Open(COMPILED_PATH, FileMode.OpenOrCreate);
             scriptWriter = new StreamWriter(stream);
 
-            reader = new StreamReader("Ukagaka\\Test-Chan\\ghost\\TEMP\\_COMBINED.neko");
+            WriteHeadlines(scriptWriter);
+            WriteScript(scriptWriter);
 
-            lexer = new Lexer(reader, ScriptDefinitions);
+            scriptReader = new StreamReader(COMBINED_PATH);
+            lexer = new Lexer(scriptReader, ScriptDefinitions);
+            PostCompile(lexer);
+            WriteScript(scriptWriter);
+            WriteTails(scriptWriter);
+            scriptReader.Close();
+            scriptWriter.Close();
 
-            WriteHeadlines();
-
-            WriteScript();
-
-            PostCompile();
-
-            WriteScript();
-
-            WriteTails();
-
-            reader.Close();
+            Debug.Log("Neko Script Post Compile Finished, Clean-up temp files");
+            File.Delete(PRECOMPILE_PATH);
+            File.Delete(COMBINED_PATH);
         }
 
         /*
          *  Combine all the neko script in to a "_COMBINED.neko" file
          */
-        private void Combine()
+        private void Combine(TextReader reader,  TextWriter writer)
         {
-            Directory.CreateDirectory("Ukagaka\\Test-Chan\\ghost\\TEMP");
-            //File.CreateText("Ukagaka\\Test-Chan\\ghost\\TEMP\\_COMBINED.neko");
-            File.Delete("Ukagaka\\Test-Chan\\ghost\\TEMP\\_COMBINED.neko");
-            FileStream stream = File.Open("Ukagaka\\Test-Chan\\ghost\\TEMP\\_COMBINED.neko", FileMode.OpenOrCreate);
-            StreamWriter writer = new StreamWriter(stream);
-            foreach (string p in Directory.GetFiles(sourcePath, "*.neko", SearchOption.AllDirectories))
+
+            string fileName, script;
+            foreach (string p in Directory.GetFiles(SCRIPT_DIRECTORY, "*.neko", SearchOption.AllDirectories))
             {
-                TextReader reader = new StreamReader(p);
-                string fileName = Path.GetFileName(p);
-                writer.WriteLine(String.Format("#--------------Begin write file {0}------------------", fileName));
-                string script = reader.ReadToEnd();
+                reader = new StreamReader(p);
+                fileName = Path.GetFileName(p);
+                writer.WriteLine(String.Format("\n #--------------Begin write file {0}------------------ \n", fileName));
+                script = reader.ReadToEnd();
                 writer.Write(script);
-                writer.WriteLine(String.Format("#--------------End of file {0}------------------", fileName));
+                writer.WriteLine(String.Format("\n #--------------End of file {0}------------------ \n", fileName));
                 reader.Close();
             }
             writer.Close();
+        }
+
+        private void ReadConfigParameters(TextReader reader)
+        {
+            Dictionary<string, string> configTable = new Dictionary<string, string>();
+            string line = reader.ReadLine();
+            while (line != null)
+            {
+                if(line[0] == '#')
+                {
+                    if (line.Contains("="))
+                    {
+                        line = line.Substring(1);
+                        string[] par = line.Split('=');
+                        configTable.Add(par[0], par[1]);
+                    }
+                }
+            }
+        }
+
+        private bool IsNekoLine(string line)
+        {
+            line = line.Trim();
+
+            string[] pythonKeywords = new string[] { "def", "if", "else", "elif", "for", "while", "do", "print", "try", "catch" };
+
+            Regex regNekoExpBegin = new Regex(@"^(.+)\:.*");
+            Regex regEvent = new Regex(@"^event .+\:\s*$");
+            Regex regTreeBranch = new Regex(@"^\-?([a-z]+)\:\s*$");
+            Regex regTreeEndBranch = new Regex(@"^\-.*");
+
+            Regex[] regs = new Regex[] { regNekoExpBegin, regEvent, regTreeBranch, regTreeEndBranch };
+            foreach(Regex reg in regs)
+            {
+                Match match = reg.Match(line);
+                if (match.Success) {
+
+                    if (reg == regEvent)
+                        return true;
+
+                    var group = match.Groups;
+                    if (group.Count > 1)
+                    {
+                        string val = group[1].Value;
+                        if (!(val.Contains(' ') || pythonKeywords.Contains(val)))
+                            return true;
+                    }
+                }
+            }
+            return false;
         }
 
         /*
@@ -398,7 +514,7 @@ namespace UkagakaW.Shiori
          * Compile all the defines to some variable statement in Python, and generate a PRE_COMPILE() function
          * After that, run the PRE_COMPILE function, and ready to begin the next phase of compilation
          */
-        private void PreCompile()
+        private void PreCompile(Lexer lexer)
         {
             bool defining = false;
             Queue<string> buffer = new Queue<string>();
@@ -478,14 +594,14 @@ namespace UkagakaW.Shiori
 
                             string uka = buffer.Dequeue();
 
-                            AppendLine(DefineUkagakaAnimation(defName, animID, uka));
+                            AppendLine(lexer, DefineUkagakaAnimation(defName, animID, uka));
 
                         }else if(defType == "ukagaka")
                         {
                             string ukagakaID = buffer.Dequeue();
                             string defName = buffer.Dequeue();
 
-                            AppendLine(DefineUkagaka(defName, ukagakaID));
+                            AppendLine(lexer, DefineUkagaka(defName, ukagakaID));
                         }else if(defType == "event")
                         {
                             string eventID = buffer.Dequeue();
@@ -495,11 +611,11 @@ namespace UkagakaW.Shiori
                             {
                                 string ukagaka = buffer.Dequeue();
 
-                                AppendLine(DefineUkagakaEvent(ukagaka, eventID, eventFunc));
+                                AppendLine(lexer, DefineUkagakaEvent(ukagaka, eventID, eventFunc));
                             }
                             else
                             {
-                                AppendLine(DefineGlobalEvent(eventID, eventFunc));
+                                AppendLine(lexer, DefineGlobalEvent(eventID, eventFunc));
                             }
                         }else if(defType == "action")
                         {
@@ -510,12 +626,13 @@ namespace UkagakaW.Shiori
                             {
                                 string ukagaka = buffer.Dequeue();
 
-                                AppendLine(DefineUkagakaAction(ukagaka, defName, actionFunc, parameters.ToArray()));
+                                AppendLine(lexer, DefineUkagakaAction(ukagaka, defName, actionFunc, parameters.ToArray()));
                             }
                             else
                             {
-                                AppendLine(DefineGlobalAction(defName, actionFunc, parameters.ToArray()));
+                                AppendLine(lexer, DefineGlobalAction(defName, actionFunc, parameters.ToArray()));
                             }
+                            parameters.Clear();
                         }
                         else
                         {
@@ -562,7 +679,7 @@ namespace UkagakaW.Shiori
          * Compile all the Neko Expression and statement block(like Random: Select:) into Python codes
          *  and finish the compilation
          */
-        private void PostCompile()
+        private void PostCompile(Lexer lexer)
         {
             NekoToken previousToken = null;
             TokenType previousTkType = TokenType.field;
@@ -571,7 +688,7 @@ namespace UkagakaW.Shiori
 
             TokenType[] criticalTokens = new TokenType[]
             {
-               TokenType.symbol_at, TokenType.symbol_dollar, TokenType.symbol_angle_left, TokenType.symbol_angle_right, TokenType.symbol_end, TokenType.str_double
+               TokenType.symbol_at, TokenType.symbol_dollar, TokenType.symbol_angle_left, TokenType.symbol_angle_right, TokenType.symbol_end, TokenType.symbol_bracket_right, TokenType.symbol_bracket_left
             };
             StringBuilder text = new StringBuilder();
 
@@ -580,12 +697,39 @@ namespace UkagakaW.Shiori
             bool hasPar = false;
             Queue<string> nodeBuffer = new Queue<string>();
 
+            int lastLine = 0;
+
             while (lexer.Next())
             {
+                string line = lexer.Line;
+                bool lineChanged = false;
+                if (lexer.LineNumber > lastLine)
+                {
+                    lineChanged = true;
+                    lastLine = lexer.LineNumber;
+                }
 
+                if (!inNekoExp)
+                {
+                    if (line.StartsWith("define "))
+                    {
+                        lexer.NextLine();
+                        previousTkType = TokenType.PythonLine;
+                        continue;
+                    }
+                    if (lineChanged)
+                    {
+                        if (!IsNekoLine(line))
+                        {
+                            AppendLine(line);
+                            previousTkType = TokenType.PythonLine;
+                            lexer.NextLine();
+                            continue;
+                        }
+                    }
+                }
 
                 TokenType tkType = lexer.Token;
-
                 NekoToken token = new NekoToken()
                 {
                     line = lexer.LineNumber,
@@ -594,159 +738,172 @@ namespace UkagakaW.Shiori
                 };
                 tokenList.Add(token);
 
-                if (tkType == TokenType.key_define)
+                if (previousTkType == TokenType.key_event)
                 {
-                    previousToken = token;
-                    previousTkType = tkType;
+                    if (tkType == TokenType.field)
+                    {
+                        line = line.Trim().Replace("event", "def");
 
-                    lexer.NextLine();
-                    continue;
+                        if (!line.EndsWith("):") && !line.EndsWith(") :"))
+                        {
+                            line = line.Insert(line.Length - 1, "()");
+                        }
+
+                        AppendLine(lexer, line);
+
+                        previousToken = token;
+                        previousTkType = tkType;
+
+                        lexer.NextLine();
+                        continue;
+                    }
                 }
 
-                if (tkType != TokenType.Unrecognize && tkType != TokenType.PythonLine)
+                if (inNekoExp)
                 {
 
-                    if(previousTkType == TokenType.key_event || previousTkType == TokenType.key_function)
+                    if (previousTkType == TokenType.symbol_at)
                     {
-                        if (tkType == TokenType.field)
+                        if (globalActions.ContainsKey(lexer.TokenContents))
                         {
-                            AppendLine(String.Format("def {0}():", token.Value));
-
-                            previousToken = token;
-                            previousTkType = tkType;
-
-                            lexer.NextLine();
-                            continue;
+                            nodeFlushIn = true;
+                            isNodeGlobal = true;
+                        }
+                        else if (ukagakaDatas[currentUkagaka].privateActions.ContainsKey(token.Value))
+                        {
+                            nodeFlushIn = true;
+                            isNodeGlobal = false;
+                        }
+                        else
+                        {
+                            throw new Exception("Undefined node");
                         }
                     }
 
-                    if (inNekoExp)
+                    if (nodeFlushIn)
                     {
 
-                        if (previousTkType == TokenType.symbol_at)
+                        if (tkType == TokenType.symbol_bracket_left)
                         {
-                            if (globalActions.ContainsKey(lexer.TokenContents))
-                            {
-                                nodeFlushIn = true;
-                                isNodeGlobal = true;
-                            }
-                            else if (ukagakaDatas[currentUkagaka].privateActions.ContainsKey(token.Value))
-                            {
-                                nodeFlushIn = true;
-                                isNodeGlobal = false;
-                            }
-                            else
-                            {
-                                throw new Exception("Undefined node");
-                            }
+                            hasPar = true;
                         }
-
-                        if (nodeFlushIn)
+                        else if (tkType == TokenType.symbol_bracket_right || tkType == TokenType.symbol_at || tkType == TokenType.symbol_angle_left
+                            || tkType == TokenType.str_double || tkType == TokenType.symbol_end || tkType == TokenType.EOL || (!hasPar && (tkType == TokenType.Empty || tkType == TokenType.text)))
                         {
-                            
-                            if(tkType == TokenType.symbol_bracket_left)
-                            {
-                                hasPar = true;
-                            }
-                            else if (tkType == TokenType.symbol_bracket_right || tkType == TokenType.symbol_at || tkType == TokenType.symbol_angle_left 
-                                || tkType == TokenType.str_double || tkType == TokenType.EOL || (!hasPar && (tkType == TokenType.Empty || tkType == TokenType.text)))
-                            {
-                                nodeFlushIn = false;
-
-                                string actionName = nodeBuffer.Dequeue();
-                                string[] actionPars = { };
-
-                                if (nodeBuffer.Count > 0)
-                                {
-                                    nodeBuffer.ToArray();
-                                }
-
-                                if (isNodeGlobal)
-                                {
-                                    this.AppendLine(
-                                        this.ConvertGlobalAction(actionName, actionPars)
-                                        );
-                                }
-                                else
-                                {
-                                    this.AppendLine(
-                                        this.ConvertUkagakaAction(currentUkagaka, actionName, actionPars)
-                                    );
-                                }
-
-                                nodeFlushIn = false;
-                                hasPar = false;
-                            }
-                            else if (tkType == TokenType.field || tkType == TokenType.str)
-                            {
-                                nodeBuffer.Enqueue(token.Value);
-                            }
-                            else
-                            {
-                                if (tkType != TokenType.Empty || tkType != TokenType.symbol_comma)
-                                {
-                                    throw new Exception("unexpected token in the action node");
-                                }
-                            }
-                        }
-                        
-                        if(!nodeFlushIn)
-                        {
-                            if (!criticalTokens.Contains<TokenType>(tkType))
-                            {
-                                if (tkType != TokenType.symbol_quote)
-                                {
-                                    text.Append(token.Value);
-                                }
-                                else
-                                {
-                                    text.Append("\\" + token.Value);
-                                }
-
-                            }
-                            else
-                            {
-                                string txt = text.ToString();
-                                if (txt.Replace(" ", "").Length > 0)
-                                {
-                                    AppendLine(String.Format("{0}.Say('{1}')", currentUkagakaVar, txt.Trim()));
-                                    text.Clear();
-                                }
-                            }
-                        }
-
-                        if (tkType == TokenType.symbol_end)
-                        {
-                            if (currentUkagakaVar != null && currentUkagakaVar != "")
-                            {
-                                AppendLine(String.Format("{0}.Finish()", currentUkagakaVar));
-                            }
-
                             nodeFlushIn = false;
+
+                            string actionName = nodeBuffer.Dequeue();
+                            string[] actionPars = { };
+
+                            if (nodeBuffer.Count > 0)
+                            {
+                                actionPars = nodeBuffer.ToArray();
+                            }
+
+                            if (isNodeGlobal)
+                            {
+                                this.AppendLine(
+                                    lexer, this.ConvertGlobalAction(actionName, actionPars)
+                                    );
+                            }
+                            else
+                            {
+                                this.AppendLine(
+                                    lexer, this.ConvertUkagakaAction(currentUkagaka, actionName, actionPars)
+                                );
+                            }
+
                             nodeBuffer.Clear();
 
-                            inNekoExp = false;
-                            lexer.SwitchTokenDefinationCollection(ScriptDefinitions);
-                        }
-                    }
+                            nodeFlushIn = false;
+                            hasPar = false;
 
-                    if (tkType == TokenType.symbol_colon)
-                    {
-                        if (ukagakaDatas.ContainsKey(previousToken.Value))
+                            if (tkType == TokenType.symbol_end)
+                            {
+                                if (currentUkagakaVar != null && currentUkagakaVar != "")
+                                {
+                                    AppendLine(lexer, String.Format("{0}.Finish()", currentUkagakaVar));
+                                }
+
+                                nodeFlushIn = false;
+                                nodeBuffer.Clear();
+
+                                inNekoExp = false;
+                                lexer.SwitchTokenDefinationCollection(ScriptDefinitions);
+
+                                previousToken = null;
+                                previousTkType = TokenType.Unrecognize;
+                                continue;
+                            }
+
+                        }
+                        else if (tkType == TokenType.field || tkType == TokenType.str)
                         {
-                            currentUkagaka = previousToken.Value;
-                            currentUkagakaVar = definedName2variableNameTable_global[currentUkagaka];
-
-                            inNekoExp = true;
-                            lexer.SwitchTokenDefinationCollection(NekoExpressionDefinitions);
+                            nodeBuffer.Enqueue(token.Value);
+                        }
+                        else
+                        {
+                            if (tkType != TokenType.Empty || tkType != TokenType.symbol_comma)
+                            {
+                                throw new Exception("unexpected token in the action node");
+                            }
                         }
                     }
 
+                    if (tkType == TokenType.symbol_end)
+                    {
+                        if (currentUkagakaVar != null && currentUkagakaVar != "")
+                        {
+                            AppendLine(lexer, String.Format("{0}.Finish()", currentUkagakaVar));
+                        }
+
+                        nodeFlushIn = false;
+                        nodeBuffer.Clear();
+
+                        inNekoExp = false;
+                        lexer.SwitchTokenDefinationCollection(ScriptDefinitions);
+
+                        previousToken = null;
+                        previousTkType = TokenType.Unrecognize;
+                        continue;
+                    }
+
+                    if (!nodeFlushIn)
+                    {
+                        if (!criticalTokens.Contains<TokenType>(tkType))
+                        {
+                            if (tkType != TokenType.symbol_quote)
+                            {
+                                text.Append(token.Value);
+                            }
+                            else
+                            {
+                                text.Append("\\" + token.Value);
+                            }
+
+                        }
+                        else
+                        {
+                            string txt = text.ToString();
+                            if (txt.Replace(" ", "").Length > 0)
+                            {
+                                AppendLine(lexer, String.Format("{0}.Say('{1}')", currentUkagakaVar, txt.Trim()));
+                                text.Clear();
+                            }
+                        }
+                    }
                 }
-                else
+
+                if (tkType == TokenType.symbol_colon)
                 {
-                    AppendLine(lexer.Line);
-                    lexer.NextLine();
+                    if (ukagakaDatas.ContainsKey(previousToken.Value))
+                    {
+                        currentUkagaka = previousToken.Value;
+                        currentUkagakaVar = definedName2variableNameTable_global[currentUkagaka];
+
+                        inNekoExp = true;
+                        lexer.SwitchTokenDefinationCollection(NekoExpressionDefinitions);
+                    }
                 }
 
                 previousToken = token;
@@ -754,7 +911,7 @@ namespace UkagakaW.Shiori
             }
         }
 
-        private void WriteHeadlines()
+        private void WriteHeadlines(TextWriter writer)
         {
             string headlines =
                 @"
@@ -771,10 +928,10 @@ import UkagakaW.Core.Animation as Animation
 
 ";
 
-            scriptWriter.Write(headlines);
+            writer.Write(headlines);
         }
 
-        private void WritePreCompiles()
+        private void WritePreCompiles(TextWriter scriptWriter)
         {
             scriptWriter.Write
                 (@"
@@ -795,25 +952,25 @@ import UkagakaW.Shiori.NekoCompiler as NekoCompiler
             preCompiles.Clear();
         }
 
-        private void WriteScript()
+        private void WriteScript(TextWriter writer)
         {
             
-            scriptWriter.Write(compiledPythonScript.ToString());
+            writer.Write(compiledPythonScript.ToString());
 
             compiledPythonScript.Clear();
         }
 
-        private void WriteTails()
+        private void WriteTails(TextWriter writer)
         {
-            scriptWriter.WriteLine();
+            writer.WriteLine();
             foreach(string ln in tailLines)
             {
-                scriptWriter.WriteLine(ln);
+                writer.WriteLine(ln);
             }
 
-            scriptWriter.WriteLine("#END OF THE SCRIPT ");
+            writer.WriteLine("#END OF THE SCRIPT ");
 
-            scriptWriter.Close();
+            writer.Close();
         }
 
         private string ConvertGlobalAction(string action, params string[] parameters)
@@ -882,7 +1039,7 @@ import UkagakaW.Shiori.NekoCompiler as NekoCompiler
                     }
                     else
                     {
-                        return String.Format("{0}.{1}()", ukagakaVarName, func.action);
+                        return String.Format("{0}.{1}()", ukagakaVarName, func.function);
                     }
                 }
             }
@@ -922,12 +1079,16 @@ import UkagakaW.Shiori.NekoCompiler as NekoCompiler
             tailLines.Add(ln);
         }
 
-        private void AppendLine(string ln)
+        private void AppendLine(Lexer lexer, string ln)
         {
             compiledPythonScript.Append(' ', lexer.IndentLevel);
             compiledPythonScript.AppendLine(ln);
         }
 
+        private void AppendLine(string ln)
+        {
+            compiledPythonScript.AppendLine(ln);
+        }
 
         private string DefineUkagaka(string tkName, string tkUkagakaID)
         {
@@ -971,7 +1132,14 @@ import UkagakaW.Shiori.NekoCompiler as NekoCompiler
         {
             if (!globalActions.ContainsKey(tkName))
             {
-                this.AddLine2PreCompile(String.Format("NekoCompiler.Current.RegisterGlobalAction('{0}', '{1}', '{2}')", tkName, tkActionFunction, ActionFunc.GetParameterListString(tkParameters)));
+                if (tkParameters.Length > 0)
+                {
+                    this.AddLine2PreCompile(String.Format("NekoCompiler.Current.RegisterGlobalAction('{0}', '{1}', '{2}')", tkName, tkActionFunction, ActionFunc.GetParameterListString(tkParameters)));
+                }
+                else
+                {
+                    this.AddLine2PreCompile(String.Format("NekoCompiler.Current.RegisterGlobalAction('{0}', '{1}')", tkName, tkActionFunction));
+                }
                 return "#Action {0} Registered in PreCompile function";
             }
             else
@@ -984,7 +1152,14 @@ import UkagakaW.Shiori.NekoCompiler as NekoCompiler
         {
             if (!globalActions.ContainsKey(tkName))
             {
-                this.AddLine2PreCompile(String.Format("NekoCompiler.Current.RegisterUkagakaAction('{0}', '{1}', '{2}', '{3}')", tkUkagaka, tkName, tkActionFunction, ActionFunc.GetParameterListString(tkParameters)));
+                if (tkParameters.Length > 0)
+                {
+                    this.AddLine2PreCompile(String.Format("NekoCompiler.Current.RegisterUkagakaAction('{0}', '{1}', '{2}', '{3}')", tkUkagaka, tkName, tkActionFunction, ActionFunc.GetParameterListString(tkParameters)));
+                }
+                else
+                {
+                    this.AddLine2PreCompile(String.Format("NekoCompiler.Current.RegisterUkagakaAction('{0}', '{1}', '{2}')", tkUkagaka, tkName, tkActionFunction));
+                }
                 return "#Action {0} Registered in PreCompile function";
             }
             else
@@ -1203,11 +1378,17 @@ import UkagakaW.Shiori.NekoCompiler as NekoCompiler
 
                     if (start)
                     {
-                        if (symbols.Contains(c) || i == str.Length - 1)
+                        if (symbols.Contains(c))
                         {
                             //still need to check
                             Value = str.Substring(j, i == j ? 1 : i - j);
-                            return i == j ? i + 1 : i;
+                            return i;
+                        }
+                        else if(i == str.Length - 1)
+                        {
+                            i = i + 1;
+                            Value = str.Substring(j, i - j);
+                            return i;
                         }
                         else
                         {

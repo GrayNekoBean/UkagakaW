@@ -46,6 +46,8 @@ namespace UkagakaW
             Console.WriteLine("wtf");
             ukagakaInstances = new SortedDictionary<string, UkagakaInstance>();
 
+            Debug.Log("Loading KiwiRenderer Library");
+
             IntPtr hDLL = Native.LoadLibrary("KiwiRenderer.dll");
 
             if (hDLL == IntPtr.Zero)
@@ -53,13 +55,19 @@ namespace UkagakaW
                 string error = Marshal.GetLastWin32Error().ToString();
                 string detail = Marshal.GetHRForLastWin32Error().ToString();
                 Console.WriteLine(error);
+
+                Debug.Error("Load KiwiRenderer.dll Library failed, please check document integrity");
             }
             else
             {
-                ukagakaInstances.Add("TEST", new UkagakaInstance("TEST"));
+                Debug.Log("Load Library Succeed, Intialize start");
 
-                NekoCompiler compiler = new NekoCompiler("Ukagaka\\Test-Chan\\ghost\\NekoScript_Test");
+                Debug.Log("Start Compiling Script files.");
+                Debug.Log("Stand By...");
+                NekoCompiler compiler = new NekoCompiler("Ukagaka\\Test-Chan", true);
                 compiler.Compile();
+
+                ukagakaInstances.Add("TEST", new UkagakaInstance("TEST"));
 
                 interactFuncPtr = Marshal.GetFunctionPointerForDelegate<UkagakaInteractEvent>(interactEvent);
                 postInitializePtr = Marshal.GetFunctionPointerForDelegate<UkagakaGeneralEvent>(postInitialize);
@@ -85,6 +93,7 @@ namespace UkagakaW
         public static void UkagakaPostInitialize(string ukagakaID)
         {
             ukagakaInstances[ukagakaID].InitializeScript();
+            Debug.Log("Initialize finished, Ukagaka will be summonned soon");
         }
 
         public static void UkagakaInteract(string ukagakaID, int parameter)
@@ -95,13 +104,13 @@ namespace UkagakaW
 
             instance.RunEvent(UkagakaEvent.FIRST_COMEOUT);
 
-            ukagaka.renderer.PlayAnimImmediately("Test-Chan_Smile", Render.AnimationState.InfinityLoop);
-            ukagaka.Say("Hello World, Does it get over to the second line? I mean this string, I guess so." +
-                "\n并且，在接下来我想测试一段中文输入。\nちょとまて、日本語はいいんですが？");
-            ukagaka.Wait(50);
-            ukagaka.NewPhase();
-            ukagaka.Say("Oh, Oh, don't worry, it's just a test of new phase func.");
-            ukagaka.Finish();
+            //ukagaka.renderer.PlayAnimImmediately("Test-Chan_Smile", Render.AnimationState.InfinityLoop);
+            //ukagaka.Say("Hello World, Does it get over to the second line? I mean this string, I guess so." +
+            //    "\n并且，在接下来我想测试一段中文输入。\nちょとまて、日本語はいいんですが？");
+            //ukagaka.Wait(50);
+            //ukagaka.NewPhase();
+            //ukagaka.Say("Oh, Oh, don't worry, it's just a test of new phase func.");
+            //ukagaka.Finish();
         }
     }
 }

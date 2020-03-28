@@ -50,18 +50,22 @@ namespace UkagakaW.Shiori
 
         public ScriptRuntime(string path)
         {
+            Util.Debug.Log("Compiling Python Scripts with IronPython 2.7...");
             this.engine = Python.CreateEngine();
             this.scope = engine.CreateScope();
 
             source = engine.CreateScriptSourceFromFile(path, Encoding.UTF8, SourceCodeKind.File);
             compiled = source.Compile();
+            Util.Debug.Log("Python Scripts Compiled done.");
 
             scope.SetVariable("ASSEMBLY_UkagakaW", Assembly.GetExecutingAssembly());
         }
 
         public void Execute()
         {
+            Util.Debug.Log("Starting Setup Script...");
             compiled.Execute(scope);
+            Util.Debug.Log("Done.");
         }
 
         public dynamic CallFunction(dynamic func, params object[] parameters)

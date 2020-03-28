@@ -1,0 +1,29 @@
+#NEKOSCRIPT=0.0.1
+#IRONPYTHON=2.7
+
+#ENCODING=UTF-8
+#PLATFORM=UkagakaW
+#SSPCOMPATIBLE=FALSE
+
+#PRAGMA can be LOOSE or STRICT
+#PRAGMA=LOOSE
+
+#There are three type of scripting mode:
+#NEKO: Pure Neko script
+#PYTHON: Pure Python script(no neko script)
+#MIX: Use visiable PRE_COMPILE event function
+#MODE=NEKO
+
+define ukagaka Test-Chan 0
+define ukagaka Cat 1
+
+define anim 'TC-Idle' idle of 0
+define anim 'TC-Smile' smile of 0
+define anim 'TC-Excited' excited of 0
+define anim 'TC-Surprise' surprise of 0
+define anim 'TC-Sad' sad of 0
+define anim 'TC-Shy' shy of 0
+
+define event TOUCH_HEAD WhenTouchHead of 0
+define event RANDOM_TALK RandomTalk of 0
+define event COMMUNICATE Communicate of 0

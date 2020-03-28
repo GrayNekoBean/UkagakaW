@@ -1,0 +1,9 @@
+
+{
+    [
+        {5, ["Test-Chan-Idle", "Hi-Mark-0"]},
+        {5, ["Test-Chan-Idle", "Hi-Mark-1"]},
+        {5, ["Test-Chan-Idle", "Hi-Mark-0"]},
+        {5, ["Test-Chan-Idle", "Hi-Mark-1"]}        
+    ]
+}

@@ -1,0 +1,30 @@
+#NEKOSCRIPT 0.0.1
+#IRONPYTHON 2.7
+
+#ENCODING=UTF-8
+#AUTO_SWITCH_LINE=FALSE
+#PLATFORM=UkagakaW
+#SSPCOMPATIBLE=FALSE
+
+#PRAGMA LOOSE
+
+define ukagaka 'TEST' 0
+
+define anim 'Test-Chan_Smile' smile of 0
+define anim 'Test-Chan_Surprise' surprise of 0
+
+define event FIRST_COMEOUT OnFirstComeout of 0
+define event TOUCH_HEAD' OnTouchHead of 0
+
+event OnFirstComeout:
+    0: 
+    @smile 
+    hello there
+    よろしくお願いいたします~~
+    @w15 @surprise 
+    It's the first time you meet me, right?
+    @w15 |
+
+event OnTouchHead:
+    0: @surprise 呜哇，被摸头了 |
+    pass

@@ -179,7 +179,7 @@ void Log(wstring info) {
 	strftime(fmt, 32, "%T", local);
 
 	wstring timeInfo = wstring(String2WString(fmt));
-	OutputDebugString(timeInfo.append(wstring(L" [INFO]: ")).append(info).append(L"\n").c_str());
+	OutputDebugString(timeInfo.append(wstring(L" [INFO] KiwiRenderer: ")).append(info).append(L"\n").c_str());
 	delete fmt;
 }
 
@@ -193,7 +193,7 @@ void Warning(wstring info) {
 	strftime(fmt, 32, "%T", local);
 
 	wstring timeInfo = wstring(String2WString(fmt));
-	OutputDebugString(timeInfo.append(wstring(L" [WARNING]: ")).append(info).append(L"\n").c_str());
+	OutputDebugString(timeInfo.append(wstring(L" [WARNING] KiwiRenderer: ")).append(info).append(L"\n").c_str());
 	delete fmt;
 }
 
@@ -207,6 +207,6 @@ void Error(wstring info) {
 	strftime(fmt, 32, "%T", local);
 
 	wstring timeInfo = wstring(String2WString(fmt));
-	OutputDebugString(timeInfo.append(wstring(L" [ERROR]: ")).append(info).append(L"\n").c_str());
+	OutputDebugString(timeInfo.append(wstring(L" [ERROR] KiwiRenderer: ")).append(info).append(L"\n").c_str());
 	delete fmt;
 }

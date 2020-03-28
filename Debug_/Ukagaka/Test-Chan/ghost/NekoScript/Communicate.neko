@@ -1,0 +1,13 @@
+
+event Communicate(input):
+    if "对话" in input:
+        0: @smile 要选择什么呢？|
+        Select:
+            -"选择A":
+                0:记住考试的时候可不要这么乱选哦，@w10 题目实在不会的话就选C吧hhh|
+            -"选择B":
+                0:选择了B呢，不妨也是一个good guess|
+    if "测试" in input:
+        0: @smile 所以说只是个测试吗？@w12也没错呢，毕竟目前$Name$还在测试阶段，能正确地对这句话有反应作为开发者的$User已经谢天谢地了吧（笑）|
+    else:
+        0: @sad果然$Name$还是有点听不懂，再检查一下代码，仔细看看有什么地方错了吗？|

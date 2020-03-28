@@ -1,0 +1,13 @@
+#FILE_DESCRIPTION(EVENTS)
+
+import Sound.py
+
+event OnFirstComeout():
+    Sound.play("first hello")
+    say: @(smile1) "hello there!" @smile2 "よろしくお願いいたします~~" @waveHand
+    : It's the first time you meet me, right?
+    # ":" has same meaning as "say:", the quote is not necessary when the expression is not complex
+    : ->(Idle)
+
+event OnTouchHead():
+    say: "feels good~ Can I touch your head?"

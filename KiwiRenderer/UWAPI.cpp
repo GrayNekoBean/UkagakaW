@@ -160,3 +160,15 @@ int CreateUserDefinedColor(
 	SPUkagaka ukagaka = GET_UKAGAKA(ukagakaID);
 	return ukagaka->renderer->pDirect2DRenderer->CreateColorBrush(r, g, b, a);
 }
+
+void DebugLog(BSTR info) {
+	Log(info);
+}
+
+void DebugWarning(BSTR info) {
+	Warning(info);
+}
+
+void DebugError(BSTR info) {
+	Error(info);
+}

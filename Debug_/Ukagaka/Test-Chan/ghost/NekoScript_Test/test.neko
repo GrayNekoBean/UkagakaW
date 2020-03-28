@@ -1,0 +1,50 @@
+#NEKOSCRIPT 0.0.1
+#IRONPYTHON 2.7
+
+#ENCODING=UTF-8
+#AUTO_SWITCH_LINE=FALSE
+#PLATFORM=UkagakaW
+#SSPCOMPATIBLE=FALSE
+
+#PRAGMA LOOSE
+
+#MODE=MIX
+
+import System
+from System import Random
+
+define ukagaka 'TEST' 0
+
+define anim 'Test-Chan_Smile' smile of 0
+define anim 'Test-Chan_Surprise' surprise of 0
+
+define event FIRST_COMEOUT OnFirstComeout of 0
+define event TOUCH_HEAD OnTouchHead of 0
+
+define action NewPhase new of 0
+define action Wait w of 0
+define action Wait(10) w1 of 0
+define action Wait(20) w2 of 0
+
+rnd = Random()
+
+def newPhase(ukagaka):
+    ukagaka.NewPhase()
+
+event OnFirstComeout:
+    r1 = rnd.Next(1,4)
+    if r1 == 1:
+        0:@new
+        @smile hello there\n
+        よろしくお願いいたします~~ @w1
+        @surprise It’s the first time you meet me, right?@smile
+        @w(15) |
+    elif r1 == 2:
+        0:  @new@smile It’s 2!\n @w2 |
+    else:
+        0:  @new@surprise Threeeeeeeeeeeeeeeeeeeeee!\n @w(30) |
+    pass
+
+event OnTouchHead:
+    0: @surprise呜哇，被摸头了@w2 |
+    pass
